@@ -6,6 +6,7 @@ from PIL import Image
 from firebase_admin import storage
 
 DESCRIPTION, PHOTO, GEOLOC = range(3)
+API_URL = os.getenv("API_URL", "http://localhost:3001/api")
 
 # type: ignore
 async def start_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
