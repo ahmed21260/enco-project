@@ -80,4 +80,3 @@ uritemplate==4.2.0
 urllib3==2.5.0
 Werkzeug==2.3.7
 yarl==1.20.1
-# End-of-file
