@@ -35,10 +35,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     storage_path = f"photos/{user.id}/{file_name}"
     public_url = upload_photo_to_storage(resized_path, storage_path)
 
-    # Log enrichi
+    # Double structure
     log_entry = {
         "operateur_id": user.id,
-        "nom": user.full_name,
+        "operatorId": user.id,
         "timestamp": update.message.date.isoformat(),
         "photo_path": file_path,
         "firebase_url": public_url
@@ -46,6 +46,15 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with open("bot/photos_log.jsonl", "a", encoding="utf-8") as f:
         import json
         f.write(json.dumps(log_entry) + "\n")
+
+    # Enregistrement Firestore (photos)
+    from utils.firestore import db
+    db.collection('photos').add({
+        "operateur_id": user.id,
+        "operatorId": user.id,
+        "timestamp": update.message.date.isoformat(),
+        "urlPhoto": public_url
+    })
 
     if public_url:
         await update.message.reply_text("📸 Photo reçue, redimensionnée et uploadée sur le cloud !")

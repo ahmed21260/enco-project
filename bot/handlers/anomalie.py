@@ -65,13 +65,18 @@ async def skip_geoloc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def save_and_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
-    data = context.user_data['anomalie']
-    data['operateur_id'] = user.id
-    data['nom'] = user.full_name
-    data['timestamp'] = update.message.date.isoformat()
-    save_anomalie(data)
-    await update.message.reply_text("✅ Anomalie enregistrée et transmise à l'encadrement. Merci pour votre vigilance !")
-    return ConversationHandler.END
+    data = context.user_data.get('anomalie', {})
+    # Double structure
+    anomalie_data = {
+        "operateur_id": user.id,
+        "operatorId": user.id,
+        "timestamp": update.message.date.isoformat(),
+        **data
+    }
+    from utils.firestore import save_anomalie
+    save_anomalie(anomalie_data)
+    await update.message.reply_text("✅ Anomalie enregistrée et transmise à l'encadrement.")
+    context.user_data['anomalie'] = {}
 
 def get_anomalie_handler():
     return ConversationHandler(

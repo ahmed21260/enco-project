@@ -18,15 +18,24 @@ async def start_fin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def save_geoloc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     loc = update.message.location
-    save_position({
+    # Double structure
+    position_data = {
         "operateur_id": user.id,
+        "operatorId": user.id,
         "nom": user.full_name,
         "timestamp": update.message.date.isoformat(),
         "latitude": loc.latitude,
         "longitude": loc.longitude,
-        "type": "fin"
-    })
-    await update.message.reply_text("Fin de poste enregistrée avec succès !")
+        "type": "fin_de_poste"
+    }
+    save_position(position_data)
+    await update.message.reply_text(
+        "✅ **Fin de poste enregistrée !**\n\n"
+        f"👤 Opérateur : {user.full_name}\n"
+        f"📍 Position : {loc.latitude:.4f}, {loc.longitude:.4f}\n"
+        f"🕐 Heure : {update.message.date.strftime('%H:%M')}\n\n"
+        "Merci pour votre travail !"
+    )
     return ConversationHandler.END
 
 def get_handler():

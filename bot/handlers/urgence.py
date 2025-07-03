@@ -40,29 +40,21 @@ async def save_urgence_geoloc(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Sauvegarder la position d'urgence"""
     user = update.message.from_user
     loc = update.message.location
-    
-    # Sauvegarde de la position d'urgence
-    urgence_data = {
+    urgence_type = context.user_data.get('urgence_type', 'inconnue')
+    incident_data = {
         "operateur_id": user.id,
+        "operatorId": user.id,
         "nom": user.full_name,
         "timestamp": update.message.date.isoformat(),
-        "latitude": loc.latitude,
-        "longitude": loc.longitude,
-        "type": "urgence"
+        "position": {"lat": loc.latitude, "lng": loc.longitude},
+        "type": urgence_type,
+        "handled": False
     }
-    
-    save_position(urgence_data)
-    
-    await update.message.reply_text(
-        "🚨 **URGENCE ENREGISTRÉE !**\n\n"
-        f"👤 Opérateur : {user.full_name}\n"
-        f"📍 Position : {loc.latitude:.4f}, {loc.longitude:.4f}\n"
-        f"🕐 Heure : {update.message.date.strftime('%H:%M')}\n\n"
-        "**L'encadrement a été alerté immédiatement !**\n"
-        "Restez en sécurité et attendez les instructions.",
-        parse_mode="Markdown"
-    )
-    return ConversationHandler.END
+    from utils.firestore import db
+    db.collection('incidents').add(incident_data)
+    await update.message.reply_text("🆘 Urgence transmise ! L'encadrement est alerté.")
+    context.user_data['urgence_step'] = None
+    context.user_data['urgence_type'] = None
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user

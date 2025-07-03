@@ -26,7 +26,14 @@ MENU_KEYBOARD = [
 async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = ReplyKeyboardMarkup(MENU_KEYBOARD, resize_keyboard=True)
     await update.message.reply_text(
-        "🤖 Que veux-tu faire ?",
+        "👋 Bienvenue sur ENCO Bot !\n\n"
+        "Voici ce que tu peux faire :\n"
+        "📌 Prise de poste : démarre ta journée\n"
+        "🖼️ Envoyer une photo : signale un état ou une anomalie\n"
+        "🛑 Urgence : déclare un incident immédiat\n"
+        "📄 Bon signé : envoie un bon d'attachement\n"
+        "🗺️ Planning, QR code, etc.\n\n"
+        "Utilise les boutons ci-dessous pour naviguer, ou tape /aide pour plus d'infos.",
         reply_markup=reply_markup
     )
 
@@ -70,15 +77,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def aide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "ℹ️ *Aide ENCO*\n\n"
+        "• *Prise de poste* : Démarre ta journée, envoie ta position.\n"
         "• *Envoyer une photo* : Pour signaler un problème ou un état machine.\n"
-        "• *Partager ma position* : Pour prise/fin de poste ou urgence.\n"
-        "• *Checklist sécurité* : Pour vérifier les points vitaux avant de démarrer.\n"
-        "• *Déclencher une urgence* : Pour alerter immédiatement l'encadrement.\n"
-        "• *Mise hors voie urgente* : Procédure d'évacuation immédiate.\n"
-        "• *Portail d'accès SNCF* : Trouver le portail le plus proche.\n"
-        "• *Fiches techniques* : Accéder aux docs machines.\n"
-        "• *Historique* : Voir vos actions passées.\n"
-        "• *Paramètres* : Gérer vos infos personnelles.\n",
+        "• *Urgence* : Déclare un incident immédiat, partage ta position.\n"
+        "• *Bon signé* : Envoie un bon d'attachement lié à ta prise.\n"
+        "• *Planning* : Récapitulatif de ta journée.\n"
+        "• *Scan QR code* : Associe un matériel à ta prise.\n\n"
+        "Utilise toujours les boutons, pas de commandes texte !",
         parse_mode="Markdown"
     )
 
