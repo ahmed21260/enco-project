@@ -246,6 +246,12 @@ app.post('/upload-bon-signe', upload.single('photo'), async (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+  console.log('✅ Route /health prête');
+});
+
 app.listen(PORT, () => {
     console.log(`\n🚀 API serveur démarré sur http://localhost:${PORT}`);
     console.log(`📡 Endpoints disponibles:`);

@@ -8,7 +8,12 @@ load_dotenv()
 from telegram.error import BadRequest, Forbidden
 from telegram import Bot
 
-from utils.firestore import db
+# Import db if Firestore enabled; otherwise create a stub list
+try:
+    from utils.firestore import db, USE_FIRESTORE
+except ImportError:
+    USE_FIRESTORE = False
+    db = None  # type: ignore
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
 
@@ -21,8 +26,18 @@ bot = Bot(token=str(BOT_TOKEN))
 COLLECTION = "operateurs"
 FIELD = "telegram_id"
 
+"""Script de nettoyage des telegram_id invalides dans Firestore.
+
+Utilisation :
+    python cleanup_invalid_telegram_ids.py          # Dry-run (aucune modification)
+    python cleanup_invalid_telegram_ids.py --apply  # Supprime telegram_id invalides
+"""
+from typing import List
 
 def cleanup_invalid_ids(dry_run: bool = True):
+    if not USE_FIRESTORE or db is None:
+        logging.error("Firestore n'est pas activé (ENCO_USE_FIRESTORE != 1). Abandon nettoyage.")
+        return
     docs = db.collection(COLLECTION).stream()
     invalid_docs = []
     for doc in docs:

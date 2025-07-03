@@ -21,7 +21,7 @@ from firebase_admin import credentials
 import json
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG if os.getenv("ENCO_DEBUG", "0") == "1" else logging.INFO
 )
 
 # Supporte BOT_TOKEN ou TELEGRAM_TOKEN
@@ -79,18 +79,20 @@ async def on_startup(app):
     scheduler = schedule_reminders()
     scheduler.start()
     logging.info("🕖 Scheduler des rappels quotidiens démarré !")
+    logging.info("🚀 Webhook initialisé : %s", WEBHOOK_URL)
 
 async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text("Merci d'envoyer la photo maintenant.")
 
 async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.info(f"[LOG] Message reçu : {update}")
-    try:
-        if update.message:
-            logging.info(f"[LOG] Texte : {update.message.text}")
-    except Exception as e:
-        logging.error(f"❌ ERREUR dans log_update : {e}")
+    chat_id = update.effective_chat.id if update.effective_chat else "N/A"
+    user = update.effective_user.username if update.effective_user else "N/A"
+    logging.info("[UPDATE] Chat %s | User %s | Type %s", chat_id, user, update.update_id)
+    if update.message and update.message.text:
+        logging.info("[UPDATE] Texte : %s", update.message.text)
+    if update.message and update.message.photo:
+        logging.info("[UPDATE] Photo reçue (%d variantes)", len(update.message.photo))
 
 async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
