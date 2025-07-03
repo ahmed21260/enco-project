@@ -128,6 +128,7 @@ def main():
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
+        webhook_path="/webhook",
         webhook_url="https://sparkling-wonder-production-39a8.up.railway.app/webhook"
     )
 
