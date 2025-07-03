@@ -29,6 +29,7 @@ LOG_PATH = os.path.join(BASE_DIR, '../positions_log.jsonl')
 def save_position(data):
     if USE_FIRESTORE:
         db.collection('positions_operateurs').document(str(data['operateur_id'])).set(data)
+        db.collection('positions_log').add(data)
     else:
         print(f"📍 Position sauvegardée (mode test): {data}")
         # Sauvegarde temporaire dans un fichier local
@@ -77,6 +78,18 @@ def save_anomalie(data):
         print(f"🚨 Anomalie sauvegardée (mode test): {data}")
         try:
             with open(os.path.join(BASE_DIR, '../anomalies_temp.json'), 'a') as f:
+                f.write(json.dumps(data) + '\n')
+        except:
+            pass
+
+# --- URGENCES ---
+def save_urgence(data):
+    if USE_FIRESTORE:
+        db.collection('incidents').add(data)
+    else:
+        print(f"🚨 Urgence sauvegardée (mode test): {data}")
+        try:
+            with open(os.path.join(BASE_DIR, '../urgences_temp.json'), 'a') as f:
                 f.write(json.dumps(data) + '\n')
         except:
             pass

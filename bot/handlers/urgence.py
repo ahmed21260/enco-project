@@ -1,7 +1,7 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
 import os
-from utils.firestore import save_position, upload_photo_to_storage
+from utils.firestore import save_position, upload_photo_to_storage, save_urgence
 from PIL import Image
 
 GEOLOC_URGENCE = 0
@@ -46,12 +46,12 @@ async def save_urgence_geoloc(update: Update, context: ContextTypes.DEFAULT_TYPE
         "operatorId": user.id,
         "nom": user.full_name,
         "timestamp": update.message.date.isoformat(),
-        "position": {"lat": loc.latitude, "lng": loc.longitude},
+        "latitude": loc.latitude,
+        "longitude": loc.longitude,
         "type": urgence_type,
         "handled": False
     }
-    from utils.firestore import db
-    db.collection('incidents').add(incident_data)
+    save_urgence(incident_data)
     await update.message.reply_text("🆘 Urgence transmise ! L'encadrement est alerté.")
     context.user_data['urgence_step'] = None
     context.user_data['urgence_type'] = None
