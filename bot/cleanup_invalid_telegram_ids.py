@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import logging
 from dotenv import load_dotenv
@@ -26,30 +28,50 @@ bot = Bot(token=str(BOT_TOKEN))
 COLLECTION = "operateurs"
 FIELD = "telegram_id"
 
-"""Script de nettoyage des telegram_id invalides dans Firestore.
+"""Utility script to purge invalid `telegram_id` fields from the `operateurs` collection.
 
-Utilisation :
-    python cleanup_invalid_telegram_ids.py          # Dry-run (aucune modification)
-    python cleanup_invalid_telegram_ids.py --apply  # Supprime telegram_id invalides
+It checks each stored chat id with Telegram's `get_chat` endpoint. If the chat
+does not exist ( `BadRequest` or `Forbidden` is raised ) the ``telegram_id``
+field is cleared and the corresponding operator document is marked as
+``actif=False``.
+
+Usage (against Firestore):
+    python cleanup_invalid_telegram_ids.py          # dry-run, no writes
+    python cleanup_invalid_telegram_ids.py --apply  # perform updates
+
+Usage with local sample data:
+    python cleanup_invalid_telegram_ids.py \
+        --sample-file bot/tests/sample_operateurs.json
+
+The sample JSON must contain an array of documents with at minimum an ``id``
+and a ``telegram_id`` field. In sample-file mode the script never performs any
+write operations to Firestore.
 """
-from typing import List, Dict, Any, Optional
 
-def _stream_firestore_docs():
-    """Retourne un iterable de tuples (id, data) depuis Firestore."""
-    for doc in db.collection(COLLECTION).stream():  # type: ignore
+from typing import List, Dict, Any, Optional, Iterator, Tuple
+
+def _stream_firestore_docs() -> Iterator[Tuple[str, Dict[str, Any]]]:
+    """Yield ``(document_id, document_data)`` from Firestore.
+
+    Relies on the global ``db`` instance provided by ``utils.firestore``.
+    When Firebase is disabled this function is never called.
+    """
+    for doc in db.collection(COLLECTION).stream():  # type: ignore[attr-defined]
         yield doc.id, doc.to_dict()
 
 
-def _stream_sample_file(path: str):
-    """Charge un fichier JSON (liste de docs) pour test local."""
-    import json, pathlib
+def _stream_sample_file(path: str) -> Iterator[Tuple[str, Dict[str, Any]]]:
+    """Load sample documents from *path* for local / CI testing."""
+    import json
+
     with open(path, "r", encoding="utf-8") as fp:
         arr: List[Dict[str, Any]] = json.load(fp)
+
     for obj in arr:
         yield str(obj.get("id", "sample")), obj
 
 
-def cleanup_invalid_ids(dry_run: bool = True, sample_file: Optional[str] = None):
+def cleanup_invalid_ids(*, dry_run: bool = True, sample_file: Optional[str] = None) -> None:
     if sample_file:
         doc_iter = _stream_sample_file(sample_file)
     else:
