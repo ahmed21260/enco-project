@@ -1,0 +1,45 @@
+.operateurs-section {
+  padding: 1.5rem;
+}
+.search-input {
+  margin-bottom: 1.2rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  width: 100%;
+  max-width: 350px;
+  font-size: 1rem;
+}
+.operateurs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.operateur-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 1.2rem 2rem;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  transition: box-shadow 0.2s;
+}
+.operateur-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
+.operateur-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #007bff;
+}
+.operateur-info h4 {
+  margin: 0 0 0.2rem 0;
+}
+.operateur-info p {
+  margin: 0.1rem 0;
+  font-size: 0.98rem;
+} 

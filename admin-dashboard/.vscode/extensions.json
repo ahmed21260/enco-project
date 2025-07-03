@@ -1,0 +1,39 @@
+{
+  "recommendations": [
+    // 📦 Base React/TypeScript
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "dsznajder.es7-react-js-snippets",
+    "xabikos.ReactSnippets",
+    "bradlc.vscode-tailwindcss",
+
+    // 🔥 Firebase / API / REST
+    "firebase.firebase-vscode",
+    "rangav.vscode-thunder-client",
+    "humao.rest-client",
+
+    // 🧠 Telegram / Backend / Env
+    "formulahendry.dotenv",
+    "christian-kohler.path-intellisense",
+    "christian-kohler.npm-intellisense",
+
+    // 🎨 UI / Style / QR / JSON
+    "ecmel.vscode-html-css",
+    "mrmlnc.vscode-json5",
+    "bierner.color-info",  
+    "PKief.material-icon-theme", 
+    "aaron-bond.better-comments",
+    "bierner.markdown-preview-github-styles",
+    "deerawan.vscode-dash", 
+    
+    // 🔐 Qualité / Git / Organisation
+    "eamodio.gitlens",
+    "streetsidesoftware.code-spell-checker",
+    "VisualStudioExptTeam.vscodeintellicode",
+    "github.copilot",
+
+    // 📱 Mobile & QR tools (si besoin scan ou PWA)
+    "chfritz.react-qrcode-logo",
+    "sannon.gitignore-generator"
+  ]
+}

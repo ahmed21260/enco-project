@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 import os
 from utils.firestore import upload_photo_to_storage
 from PIL import Image
+import tempfile
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user or not update.message.photo:
@@ -49,4 +50,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if public_url:
         await update.message.reply_text("📸 Photo reçue, redimensionnée et uploadée sur le cloud !")
     else:
-        await update.message.reply_text("❗ Erreur upload cloud, photo sauvegardée localement.") 
+        await update.message.reply_text("❗ Erreur upload cloud, photo sauvegardée localement.")
+
+async def transcribe_voice(voice_path):
+    # MOCK : à remplacer par une vraie API (Google Speech, Whisper, etc.)
+    return "[Transcription vocale ici]"
+
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.from_user or not update.message.voice:
+        if update.message:
+            await update.message.reply_text("❗ Erreur : message vocal non reconnu.")
+        return
+    user = update.message.from_user
+    voice = update.message.voice
+    file = await context.bot.get_file(voice.file_id)
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.ogg') as tmp:
+        await file.download_to_drive(tmp.name)
+        transcript = await transcribe_voice(tmp.name)
+    # Associer ce commentaire à la dernière photo de l'utilisateur (mock)
+    # Ici, on pourrait mettre à jour Firestore ou le log local
+    await update.message.reply_text(f"🗣️ Commentaire vocal reçu : {transcript}") 

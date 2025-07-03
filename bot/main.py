@@ -12,7 +12,7 @@ from handlers.historique import afficher_historique
 from handlers.test import test_command, start_command
 from handlers.urgence import get_urgence_handler
 from handlers.portail import portail_sncf, portail_callback
-from handlers.photo import handle_photo
+from handlers.photo import handle_photo, handle_voice
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Bot, Update
@@ -112,6 +112,7 @@ def main():
     
     # Handler pour les photos envoyées
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
 
     print("✅ Bot ENCO démarré et en écoute sur Telegram...")

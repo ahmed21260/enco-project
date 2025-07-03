@@ -1,0 +1,60 @@
+.bons-section {
+  padding: 1.5rem;
+}
+.bons-filtres {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+.bons-filtres select, .bons-filtres input[type=date] {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+}
+.bons-filtres button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.bons-filtres button:hover {
+  background: #0056b3;
+}
+.bons-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.bon-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 1.2rem 2rem;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  transition: box-shadow 0.2s;
+}
+.bon-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
+.bon-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #28a745;
+}
+.bon-info h4 {
+  margin: 0 0 0.2rem 0;
+}
+.bon-info p {
+  margin: 0.1rem 0;
+  font-size: 0.98rem;
+} 
