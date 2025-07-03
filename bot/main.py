@@ -39,7 +39,7 @@ else:
 
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {
-        'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
+        'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
     })
 
 API_URL = os.getenv("API_URL", "https://believable-motivation-production.up.railway.app/api")
@@ -124,7 +124,12 @@ def main():
     print("✅ Bot ENCO démarré et en écoute sur Telegram...")
     print("🔗 Test avec /start ou /test sur ton bot")
     print("📱 Tous les boutons du menu sont maintenant fonctionnels !")
-    app.run_polling()
+    PORT = int(os.environ.get("PORT", 8080))
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url="https://sparkling-wonder-production-39a8.up.railway.app/webhook"
+    )
 
 if __name__ == "__main__":
     main() 
