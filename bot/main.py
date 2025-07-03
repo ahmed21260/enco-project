@@ -61,7 +61,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover
         "APScheduler n'est pas installé. Exécutez 'pip install APScheduler'."
     ) from exc
 
-from telegram import Bot, Update
+from telegram import Bot, Update  # type: ignore[import]
 
 try:
     import firebase_admin  # type: ignore[import]

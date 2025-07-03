@@ -2,13 +2,30 @@ from __future__ import annotations
 
 import os
 import logging
-from dotenv import load_dotenv
-from firebase_admin import firestore
+
+# --- Third-party imports with graceful degradation ---------------------------------
+try:
+    from dotenv import load_dotenv  # type: ignore[import]
+except ModuleNotFoundError as exc:  # pragma: no cover
+    raise ModuleNotFoundError(
+        "python-dotenv est requis. Installez-le via 'pip install python-dotenv'."
+    ) from exc
+
+# Attempt firebase_admin import for Firestore operations
+try:
+    from firebase_admin import firestore  # type: ignore[import]
+except ModuleNotFoundError:
+    firestore = None  # type: ignore
 
 load_dotenv()
 
-from telegram.error import BadRequest, Forbidden
-from telegram import Bot
+try:
+    from telegram.error import BadRequest, Forbidden  # type: ignore[import]
+    from telegram import Bot  # type: ignore[import]
+except ModuleNotFoundError as exc:  # pragma: no cover
+    raise ModuleNotFoundError(
+        "python-telegram-bot est requis. Installez-le via 'pip install python-telegram-bot[webhooks]'."
+    ) from exc
 
 # Import db if Firestore enabled; otherwise create a stub list
 try:
@@ -91,8 +108,10 @@ def cleanup_invalid_ids(*, dry_run: bool = True, sample_file: Optional[str] = No
             # Chat inexistant ou bot bloqué
             logging.warning("Chat introuvable pour %s: %s", chat_id, e)
             invalid_docs.append(doc_id)
-            if not dry_run and not sample_file:
-                db.collection(COLLECTION).document(doc_id).update({FIELD: firestore.DELETE_FIELD, "actif": False})  # type: ignore
+            if not dry_run and not sample_file and firestore is not None:
+                db.collection(COLLECTION).document(doc_id).update({FIELD: firestore.DELETE_FIELD, "actif": False})  # type: ignore[attr-defined]
+            elif not dry_run and firestore is None:
+                logging.error("Impossible de mettre à jour Firestore : firebase-admin manquant.")
     logging.info("Documents invalides trouvés: %s", invalid_docs)
     if dry_run:
         logging.info("Mode dry-run : aucun document modifié. Relancez avec dry_run=False pour appliquer la suppression.")
