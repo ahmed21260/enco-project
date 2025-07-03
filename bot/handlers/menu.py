@@ -44,7 +44,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📷 Envoyer une photo":
         await start_photo(update, context)
     elif text == "📄 Envoyer bon signé":
-        await start_fin(update, context)  # ou handler spécifique pour bon signé
+        await start_fin(update, context)
     elif text == "🛑 URGENCE / INCIDENT":
         await urgence(update, context)
     elif text == "🚧 Portail SNCF / Plan accès":
