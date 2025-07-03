@@ -10,7 +10,6 @@ from handlers.checklist import get_checklist_handler
 from handlers.anomalie import get_anomalie_handler
 from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
-from handlers.test import test_command
 from handlers.urgence import get_urgence_handler
 from handlers.portail import portail_sncf, portail_callback
 from handlers.photo import handle_photo, handle_voice
@@ -27,13 +26,13 @@ logging.basicConfig(
 
 # Supporte BOT_TOKEN ou TELEGRAM_TOKEN
 BOT_TOKEN = os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
-PORT = int(os.environ.get("PORT", 8080))
-WEBHOOK_PATH = "webhook"
-WEBHOOK_URL = "https://enco-prestarail-bot.railway.app/webhook"
-
 if not BOT_TOKEN:
     logging.error("❌ ERREUR : BOT_TOKEN ou TELEGRAM_TOKEN non défini dans les variables d'environnement !")
     exit(1)
+BOT_TOKEN = str(BOT_TOKEN)  # assure que BOT_TOKEN est bien un str
+PORT = int(os.environ.get("PORT", 8080))
+WEBHOOK_PATH = "webhook"
+WEBHOOK_URL = "https://enco-prestarail-bot.railway.app/webhook"
 bot = Bot(token=BOT_TOKEN)
 
 if not os.getenv('ENCO_USE_FIRESTORE', '0') == '1':
@@ -100,7 +99,6 @@ def main():
     application = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
     application.add_error_handler(error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
-    application.add_handler(CommandHandler("test", test_command))
     application.add_handler(CommandHandler("test_rappel", test_rappel))
     for handler in get_menu_handlers():
         application.add_handler(handler)
