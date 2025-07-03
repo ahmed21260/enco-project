@@ -125,6 +125,46 @@ app.get('/api/operateurs', (req, res) => {
     res.json(Object.values(operateurs));
 });
 
+app.post('/prise-poste', async (req, res) => {
+  try {
+    const {
+      telegram_id, nom, pelle, parc, client, chantier, geoloc, heure
+    } = req.body;
+    const db = admin.firestore();
+    // 1. Vérifier si l'opérateur existe
+    let opSnap = await db.collection('operateurs').where('telegram_id', '==', telegram_id).limit(1).get();
+    let operateurId;
+    if (opSnap.empty) {
+      // Créer l'opérateur
+      const opRef = await db.collection('operateurs').add({
+        telegram_id,
+        nom: nom || '',
+        actif: true,
+        createdAt: new Date().toISOString()
+      });
+      operateurId = opRef.id;
+    } else {
+      operateurId = opSnap.docs[0].id;
+      // Mettre à jour actif=true
+      await db.collection('operateurs').doc(operateurId).update({ actif: true });
+    }
+    // 2. Créer la prise de poste
+    const priseData = {
+      operateur_id: operateurId,
+      telegram_id,
+      nom: nom || '',
+      pelle, parc, client, chantier,
+      geoloc,
+      heure: heure || new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+    const priseRef = await db.collection('prises_poste').add(priseData);
+    res.json({ success: true, prise_poste_id: priseRef.id, operateur_id: operateurId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 API serveur démarré sur http://localhost:${PORT}`);
     console.log(`📡 Endpoints disponibles:`);
@@ -134,4 +174,5 @@ app.listen(PORT, () => {
     console.log(`   - GET /api/anomalies (liste des anomalies)`);
     console.log(`   - GET /api/urgences (liste des urgences)`);
     console.log(`   - GET /api/operateurs (liste des opérateurs)`);
+    console.log(`   - POST /prise-poste`);
 }); 
