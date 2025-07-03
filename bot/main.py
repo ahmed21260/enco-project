@@ -37,7 +37,7 @@ try:
         MessageHandler,
         filters,
         ContextTypes,
-    )  # type: ignore
+    )  # type: ignore[import-untyped]
 except ModuleNotFoundError as exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "python-telegram-bot n'est pas installé. Exécutez 'pip install python-telegram-bot[webhooks]'."
@@ -61,7 +61,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover
         "APScheduler n'est pas installé. Exécutez 'pip install APScheduler'."
     ) from exc
 
-from telegram import Bot, Update  # type: ignore
+from telegram import Bot, Update  # type: ignore[import-untyped]
 
 try:
     import firebase_admin  # type: ignore
