@@ -61,7 +61,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover
         "APScheduler n'est pas installé. Exécutez 'pip install APScheduler'."
     ) from exc
 
-from telegram import Bot, Update  # type: ignore[import]
+from telegram import Bot, Update  # type: ignore[import-untyped]
 
 try:
     import firebase_admin  # type: ignore[import]
@@ -106,7 +106,7 @@ if not firebase_admin._apps:
 
 API_URL = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api")
 
-async def send_daily_reminder():
+async def send_daily_reminder() -> None:
     operateurs = db.collection('operateurs').stream()
     for op in operateurs:
         data = op.to_dict()
@@ -120,34 +120,34 @@ async def send_daily_reminder():
             except Exception as e:
                 logging.error(f"Erreur envoi à {chat_id} : {e}")
 
-async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_daily_reminder()
     if update.message:
         await update.message.reply_text("Rappel envoyé à tous les opérateurs inscrits !")
 
-async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Commande de test simple pour vérifier que le webhook fonctionne."""
     logging.info("[PING] Reçu /ping depuis %s", update.effective_user.id if update.effective_user else "unknown")
     if update.message:
         await update.message.reply_text("pong 🏓")
 
-def schedule_reminders():
+def schedule_reminders() -> AsyncIOScheduler:
     """Configure and return the APScheduler instance responsible for daily reminders."""
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     scheduler.add_job(send_daily_reminder, "cron", hour=19, minute=0)
     return scheduler
 
-async def on_startup(app):
+async def on_startup(app) -> None:
     scheduler: AsyncIOScheduler = schedule_reminders()
     scheduler.start()
     logging.info("🕖 Scheduler des rappels quotidiens démarré !")
     logging.info("🚀 Webhook initialisé : %s", WEBHOOK_URL)
 
-async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message:
         await update.message.reply_text("Merci d'envoyer la photo maintenant.")
 
-async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_chat.id if update.effective_chat else "N/A"
     user = update.effective_user.username if update.effective_user else "N/A"
     logging.info("[UPDATE] Chat %s | User %s | Type %s", chat_id, user, update.update_id)
@@ -156,10 +156,10 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.photo:
         logging.info("[UPDATE] Photo reçue (%d variantes)", len(update.message.photo))
 
-async def error_handler(update, context):
+async def error_handler(update, context) -> None:
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
-def main():
+def main() -> None:
     """Instantiate the PTB `Application` and start the webhook long-running loop."""
     application = (
         ApplicationBuilder()
