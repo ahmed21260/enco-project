@@ -28,9 +28,19 @@ app.use(bodyParser.json());
 
 // 📬 Route webhook (nécessaire si mode webhook)
 app.post('/webhook', (req, res) => {
-  console.log('✅ Webhook reçu :', req.body);
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
+  const body = req.body;
+  // Vérifie la présence de update_id (champ obligatoire Telegram)
+  if (!body || typeof body.update_id === 'undefined') {
+    console.error('❌ Webhook reçu sans update_id ou format incorrect:', body);
+    return res.status(400).json({ error: 'Invalid Telegram update: missing update_id' });
+  }
+  try {
+    bot.processUpdate(body);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('❌ Erreur processUpdate:', err);
+    res.status(500).json({ error: 'processUpdate failed' });
+  }
 });
 
 // 📨 Réaction simple à un message reçu
