@@ -79,6 +79,9 @@ async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text("Merci d'envoyer la photo maintenant.")
 
+async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"[LOG] Message reçu : {update}")
+
 def main():
     if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "your_telegram_bot_token_here":
         print("❌ ERREUR : Token Telegram non configuré !")
@@ -88,6 +91,9 @@ def main():
     
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).post_init(on_startup).build()
     
+    # Log chaque message reçu
+    app.add_handler(MessageHandler(filters.ALL, log_update), group=0)
+
     # Handlers de test simples
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("test", test_command))
