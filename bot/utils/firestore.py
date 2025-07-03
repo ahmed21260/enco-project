@@ -28,8 +28,19 @@ LOG_PATH = os.path.join(BASE_DIR, '../positions_log.jsonl')
 # --- POSITIONS ---
 def save_position(data):
     if USE_FIRESTORE:
-        db.collection('positions_operateurs').document(str(data['operateur_id'])).set(data)
+        # Historique complet
         db.collection('positions_log').add(data)
+        # Position courante (ping live)
+        doc_id = str(data.get('operateur_id') or data.get('operatorId'))
+        db.collection('positions_operateurs').document(doc_id).set(data)
+        # Fiche opérateur
+        db.collection('operateurs').document(doc_id).set({
+            'operateur_id': doc_id,
+            'nom': str(data.get('nom', '')),
+            'telegram_id': str(data.get('operateur_id', '')),
+            'actif': True,
+            'updatedAt': str(data.get('timestamp')),
+        }, merge=True)
     else:
         print(f"📍 Position sauvegardée (mode test): {data}")
         # Sauvegarde temporaire dans un fichier local

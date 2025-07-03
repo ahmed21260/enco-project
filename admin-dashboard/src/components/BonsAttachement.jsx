@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db } from "../../firebaseConfig";
+import { db } from '../../firebaseConfig';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import './BonsAttachement.css';
 
@@ -11,7 +11,7 @@ const mockBons = [
 ];
 
 // Si tu utilises une API pour les bons, mets ici l'URL prod :
-// const API_BONS_URL = 'https://believable-motivation-production.up.railway.app/api/bons_attachement';
+const API_BONS_URL = 'https://believable-motivation-production.up.railway.app/api/bons_attachement';
 
 function exportCSV(data) {
   const csv = [

@@ -1,7 +1,4 @@
 {
-  "dataconnect": {
-    "source": "dataconnect/connector/dataconnect.yaml"
-  },
   "hosting": {
     "public": "admin-dashboard/dist",
     "ignore": [
