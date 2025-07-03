@@ -1,8 +1,48 @@
+"""Main entry point for the ENCO Telegram bot.
+
+The bot uses python-telegram-bot in webhook mode. Core responsibilities:
+    • register command / message handlers
+    • schedule daily reminders via APScheduler
+    • expose a webhook endpoint handled by PTB Application
+
+Environment variables required:
+    BOT_TOKEN / TELEGRAM_TOKEN   – Telegram bot token
+    PORT                         – Port to bind the webhook listener (Railway sets it)
+    WEBHOOK_URL                  – Public https URL that Telegram will call
+    ENCO_USE_FIRESTORE           – "1" to enable Firebase / Firestore persistence
+
+Any missing mandatory variable aborts startup with a clear log message.
+"""
+
+from __future__ import annotations
+
 import os
 import logging
-from dotenv import load_dotenv
+
+# Third-party imports wrapped in try/except for informative error messages.
+try:
+    from dotenv import load_dotenv  # type: ignore
+except ModuleNotFoundError as exc:  # pragma: no cover
+    raise ModuleNotFoundError(
+        "python-dotenv n'est pas installé. Exécutez 'pip install python-dotenv'."
+    ) from exc
+
 load_dotenv()
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+
+try:
+    from telegram.ext import (
+        ApplicationBuilder,
+        CommandHandler,
+        CallbackQueryHandler,
+        MessageHandler,
+        filters,
+        ContextTypes,
+    )
+except ModuleNotFoundError as exc:  # pragma: no cover
+    raise ModuleNotFoundError(
+        "python-telegram-bot n'est pas installé. Exécutez 'pip install python-telegram-bot[webhooks]'."
+    ) from exc
+
 from handlers.menu import get_menu_handlers
 from handlers.prise_de_poste import get_handler as prise_handler
 from handlers.fin_de_poste import get_handler as fin_handler
@@ -13,11 +53,25 @@ from handlers.historique import afficher_historique
 from handlers.urgence import get_urgence_handler
 from handlers.portail import portail_sncf, portail_callback
 from handlers.photo import handle_photo, handle_voice
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import]
+except ModuleNotFoundError as exc:  # pragma: no cover
+    raise ModuleNotFoundError(
+        "APScheduler n'est pas installé. Exécutez 'pip install APScheduler'."
+    ) from exc
+
 from telegram import Bot, Update
+
+try:
+    import firebase_admin  # type: ignore[import]
+    from firebase_admin import credentials  # type: ignore[import]
+except ModuleNotFoundError as exc:  # pragma: no cover
+    raise ModuleNotFoundError(
+        "firebase-admin n'est pas installé. Exécutez 'pip install firebase-admin'."
+    ) from exc
+
 from utils.firestore import db
-import firebase_admin
-from firebase_admin import credentials
 import json
 from typing import Final
 
@@ -78,12 +132,13 @@ async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("pong 🏓")
 
 def schedule_reminders():
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_daily_reminder, 'cron', hour=19, minute=0)
+    """Configure and return the APScheduler instance responsible for daily reminders."""
+    scheduler: AsyncIOScheduler = AsyncIOScheduler()
+    scheduler.add_job(send_daily_reminder, "cron", hour=19, minute=0)
     return scheduler
 
 async def on_startup(app):
-    scheduler = schedule_reminders()
+    scheduler: AsyncIOScheduler = schedule_reminders()
     scheduler.start()
     logging.info("🕖 Scheduler des rappels quotidiens démarré !")
     logging.info("🚀 Webhook initialisé : %s", WEBHOOK_URL)
@@ -105,7 +160,13 @@ async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
 def main():
-    application = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
+    """Instantiate the PTB `Application` and start the webhook long-running loop."""
+    application = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .post_init(on_startup)
+        .build()
+    )
     application.add_error_handler(error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
     application.add_handler(CommandHandler("test_rappel", test_rappel))
