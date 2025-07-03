@@ -1,0 +1,36 @@
+.timeline-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 1.5rem;
+}
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  padding: 1rem 1.5rem;
+  position: relative;
+}
+.timeline-icon {
+  font-size: 1.7rem;
+  margin-right: 1.2rem;
+  margin-top: 0.2rem;
+}
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+}
+.timeline-time {
+  font-size: 0.95rem;
+  color: #888;
+}
+.timeline-user {
+  font-weight: bold;
+  color: #222;
+}
+.timeline-action {
+  color: #007bff;
+  font-size: 1.05rem;
+} 
