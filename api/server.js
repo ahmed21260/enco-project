@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = 3001;
@@ -19,6 +21,8 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'enco-prestarail.appspot.com'
 });
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Route pour récupérer les positions des opérateurs
 app.get('/api/positions', (req, res) => {
@@ -165,6 +169,43 @@ app.post('/prise-poste', async (req, res) => {
   }
 });
 
+app.post('/upload-photo', upload.single('photo'), async (req, res) => {
+  try {
+    const { telegram_id, prise_poste_id, type } = req.body;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'Aucune photo reçue' });
+    const ext = file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    // Récupérer nom opérateur
+    const db = admin.firestore();
+    let opSnap = await db.collection('operateurs').where('telegram_id', '==', telegram_id).limit(1).get();
+    let nom = 'Operateur';
+    if (!opSnap.empty) nom = opSnap.docs[0].data().nom || 'Operateur';
+    // Nom du fichier : Nom_YYYY-MM-DD_PriseID_Type_UUID.jpg
+    const fileName = `${nom}_${dateStr}_${prise_poste_id}_${type || 'photo'}_${uuidv4()}.${ext}`.replace(/\s+/g, '_');
+    const bucket = admin.storage().bucket();
+    const fileRef = bucket.file(`photos/${fileName}`);
+    await fileRef.save(file.buffer, { contentType: file.mimetype });
+    await fileRef.makePublic();
+    const url = fileRef.publicUrl();
+    // Enregistrer dans Firestore
+    const photoDoc = {
+      url,
+      operateur_id: opSnap.empty ? null : opSnap.docs[0].id,
+      telegram_id,
+      prise_poste_id,
+      type: type || 'photo',
+      createdAt: now.toISOString(),
+      fileName
+    };
+    const docRef = await db.collection('photos').add(photoDoc);
+    res.json({ success: true, url, photo_id: docRef.id });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 API serveur démarré sur http://localhost:${PORT}`);
     console.log(`📡 Endpoints disponibles:`);
@@ -175,4 +216,5 @@ app.listen(PORT, () => {
     console.log(`   - GET /api/urgences (liste des urgences)`);
     console.log(`   - GET /api/operateurs (liste des opérateurs)`);
     console.log(`   - POST /prise-poste`);
+    console.log(`   - POST /upload-photo`);
 }); 
