@@ -61,9 +61,13 @@ const Dashboard = () => {
   const defaultCenter = [46.603354, 1.888334];
 
   useEffect(() => {
-    // Synchro temps réel Firestore
+    setLoading(true);
     const unsub = onSnapshot(collection(db, 'positions_log'), (snap) => {
       setPositions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (err) => {
+      setLoading(false);
+      setPositions([]);
     });
     return () => unsub();
   }, []);
@@ -124,7 +128,11 @@ const Dashboard = () => {
           <button>🔍 Filtrer</button>
         </div>
         <div className="historique-list">
-          {positions.map((pos, index) => (
+          {loading ? (
+            <div>Chargement…</div>
+          ) : positions.length === 0 ? (
+            <div>Aucune action enregistrée</div>
+          ) : positions.map((pos, index) => (
             <div key={index} className="historique-item">
               <div className="item-icon">
                 {pos.type === 'prise_de_poste' ? '🟢' : '🔴'}
