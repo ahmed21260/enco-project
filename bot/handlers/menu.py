@@ -14,6 +14,42 @@ import io
 from PIL import Image
 from pyzbar.pyzbar import decode as decode_qr
 import os
+from handlers.photo import start_photo
+
+MENU_KEYBOARD = [
+    ["📌 Prise de poste", "📷 Envoyer une photo"],
+    ["📄 Envoyer bon signé", "🛑 URGENCE / INCIDENT"],
+    ["🚧 Portail SNCF / Plan accès", "🔧 Rapport technique machine"],
+    ["🗓️ Planning", "📦 Scan Matériel / Retrait PL (à venir)"]
+]
+
+async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reply_markup = ReplyKeyboardMarkup(MENU_KEYBOARD, resize_keyboard=True)
+    await update.message.reply_text(
+        "🤖 Que veux-tu faire ?",
+        reply_markup=reply_markup
+    )
+
+async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "📌 Prise de poste":
+        await start_prise(update, context)
+    elif text == "📷 Envoyer une photo":
+        await start_photo(update, context)
+    elif text == "📄 Envoyer bon signé":
+        await start_fin(update, context)  # ou handler spécifique pour bon signé
+    elif text == "🛑 URGENCE / INCIDENT":
+        await urgence(update, context)
+    elif text == "🚧 Portail SNCF / Plan accès":
+        await portail_sncf(update, context)
+    elif text == "🔧 Rapport technique machine":
+        await declare_panne_start(update, context)
+    elif text == "🗓️ Planning":
+        await planning_handler(update, context)
+    elif text == "📦 Scan Matériel / Retrait PL (à venir)":
+        await scan_qr_start(update, context)
+    else:
+        await menu_principal(update, context)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -249,21 +285,17 @@ async def declare_panne_commentaire(update: Update, context: ContextTypes.DEFAUL
 
 def get_menu_handlers():
     return [
-        CommandHandler("start", start),
-        CommandHandler("aide", aide),
-        MessageHandler(filters.Regex("^Aide$"), aide),
+        CommandHandler("start", menu_principal),
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu),
+        get_anomalie_handler(),
+        MessageHandler(filters.Regex("^Partager ma position$"), start_prise),
+        MessageHandler(filters.Regex("^Fin de poste$"), start_fin),
         MessageHandler(filters.Regex("^Checklist sécurité$"), start_checklist),
-        MessageHandler(filters.Regex("^Déclencher une urgence$"), urgence),
         MessageHandler(filters.Regex("^Mise hors voie urgente$"), hors_voie),
         MessageHandler(filters.Regex("^Portail d'accès SNCF$"), portail_sncf),
         MessageHandler(filters.Regex("^Fiches techniques$"), consulter_documents),
         MessageHandler(filters.Regex("^Historique$"), afficher_historique),
         MessageHandler(filters.Regex("^Paramètres$"), aide),
-        get_anomalie_handler(),
-        MessageHandler(filters.Regex("^Partager ma position$"), start_prise),
-        MessageHandler(filters.Regex("^Fin de poste$"), start_fin),
-        MessageHandler(filters.TEXT & ~filters.COMMAND, welcome_message),
-        MessageHandler(filters.Regex("^Planning$"), planning_handler),
         MessageHandler(filters.Regex("^📦 Scanner QR code$"), scan_qr_start),
         MessageHandler(filters.PHOTO, scan_qr_photo),
         MessageHandler(filters.Regex("^Prise de poste$"), prise_poste_and_scan_qr),

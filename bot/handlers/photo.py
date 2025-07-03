@@ -69,4 +69,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         transcript = await transcribe_voice(tmp.name)
     # Associer ce commentaire à la dernière photo de l'utilisateur (mock)
     # Ici, on pourrait mettre à jour Firestore ou le log local
-    await update.message.reply_text(f"🗣️ Commentaire vocal reçu : {transcript}") 
+    await update.message.reply_text(f"🗣️ Commentaire vocal reçu : {transcript}")
+
+async def start_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await handle_photo(update, context) 

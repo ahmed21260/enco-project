@@ -28,7 +28,7 @@ LOG_PATH = os.path.join(BASE_DIR, '../positions_log.jsonl')
 # --- POSITIONS ---
 def save_position(data):
     if USE_FIRESTORE:
-        db.collection('positions_operateurs').add(data)
+        db.collection('positions_operateurs').document(str(data['operateur_id'])).set(data)
     else:
         print(f"📍 Position sauvegardée (mode test): {data}")
         # Sauvegarde temporaire dans un fichier local
