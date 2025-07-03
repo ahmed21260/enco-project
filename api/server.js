@@ -206,6 +206,46 @@ app.post('/upload-photo', upload.single('photo'), async (req, res) => {
   }
 });
 
+app.post('/upload-bon-signe', upload.single('photo'), async (req, res) => {
+  try {
+    const { telegram_id, prise_poste_id, client, chantier } = req.body;
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'Aucune photo reçue' });
+    const ext = file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    // Récupérer nom opérateur
+    const db = admin.firestore();
+    let opSnap = await db.collection('operateurs').where('telegram_id', '==', telegram_id).limit(1).get();
+    let nom = 'Operateur';
+    if (!opSnap.empty) nom = opSnap.docs[0].data().nom || 'Operateur';
+    // Nom du fichier : Ahmed_2025-07-03_LGV_ColasRail.jpg
+    const chantierStr = chantier ? chantier.replace(/\s+/g, '') : 'Chantier';
+    const clientStr = client ? client.replace(/\s+/g, '') : 'Client';
+    const fileName = `${nom}_${dateStr}_${chantierStr}_${clientStr}.${ext}`.replace(/\s+/g, '_');
+    const bucket = admin.storage().bucket();
+    const fileRef = bucket.file(`bons_attachement/${fileName}`);
+    await fileRef.save(file.buffer, { contentType: file.mimetype });
+    await fileRef.makePublic();
+    const url = fileRef.publicUrl();
+    // Enregistrer dans Firestore
+    const bonDoc = {
+      url,
+      operateur_id: opSnap.empty ? null : opSnap.docs[0].id,
+      telegram_id,
+      prise_poste_id,
+      client: client || '',
+      chantier: chantier || '',
+      createdAt: now.toISOString(),
+      fileName
+    };
+    const docRef = await db.collection('bons_attachement').add(bonDoc);
+    res.json({ success: true, url, bon_id: docRef.id });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 API serveur démarré sur http://localhost:${PORT}`);
     console.log(`📡 Endpoints disponibles:`);
@@ -217,4 +257,5 @@ app.listen(PORT, () => {
     console.log(`   - GET /api/operateurs (liste des opérateurs)`);
     console.log(`   - POST /prise-poste`);
     console.log(`   - POST /upload-photo`);
+    console.log(`   - POST /upload-bon-signe`);
 }); 
