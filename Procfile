@@ -1,2 +1,2 @@
-web: cd api && npm start
-worker: cd bot && python main.py 
+web: cd bot && python main.py
+worker: cd api && npm start 

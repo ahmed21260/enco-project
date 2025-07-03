@@ -114,9 +114,15 @@ def main():
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
     application.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
-    logging.info("🤖 Bot ENCO démarré en mode long polling (run_polling)")
-    logging.info("VERSION DEBUG 2025-07-03")
-    application.run_polling()
+    logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram sur le port {PORT} !")
+    logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")
+    logging.info("VERSION DEBUG 2025-07-04")
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=WEBHOOK_PATH,
+        webhook_url=WEBHOOK_URL
+    )
 
 if __name__ == "__main__":
     try:
