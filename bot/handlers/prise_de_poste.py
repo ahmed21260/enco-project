@@ -22,6 +22,7 @@ async def save_geoloc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Sauvegarde de la position
     position_data = {
         "operateur_id": user.id,
+        "operatorId": user.id,
         "nom": user.full_name,
         "timestamp": update.message.date.isoformat(),
         "latitude": loc.latitude,
