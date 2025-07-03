@@ -16,10 +16,17 @@ const TimelineActions = () => {
 
   useEffect(() => {
     const unsubPos = onSnapshot(collection(db, 'positions_operateurs'), (snap) => {
-      const pos = snap.docs.map(doc => ({ ...doc.data(), type: doc.data().type || 'prise_de_poste' }));
+      const pos = snap.docs.map(doc => ({ ...doc.data(), type: doc.data().type || 'prise_de_poste', _src: 'pos_operateurs' }));
       setActions(prev => {
-        const others = prev.filter(a => a._src !== 'pos');
-        return [...others, ...pos.map(p => ({ ...p, _src: 'pos' }))];
+        const others = prev.filter(a => a._src !== 'pos_operateurs');
+        return [...others, ...pos];
+      });
+    });
+    const unsubPosLog = onSnapshot(collection(db, 'positions_log'), (snap) => {
+      const poslog = snap.docs.map(doc => ({ ...doc.data(), type: doc.data().type || 'prise_de_poste', _src: 'pos_log' }));
+      setActions(prev => {
+        const others = prev.filter(a => a._src !== 'pos_log');
+        return [...others, ...poslog];
       });
     });
     const unsubAno = onSnapshot(collection(db, 'anomalies'), (snap) => {
@@ -36,7 +43,7 @@ const TimelineActions = () => {
         return [...others, ...chk];
       });
     });
-    return () => { unsubPos(); unsubAno(); unsubChk(); };
+    return () => { unsubPos(); unsubPosLog(); unsubAno(); unsubChk(); };
   }, []);
 
   const sorted = actions

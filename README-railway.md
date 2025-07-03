@@ -6,7 +6,7 @@
 
 ## 2. Variables d'environnement
 - Copie le contenu de `.env.example` dans l'interface Railway (onglet Variables)
-- Mets à jour `WEBHOOK_URL` après le premier déploiement
+- Mets à jour `WEBHOOK_URL` après le premier déploiement (ex: https://believable-motivation-production.up.railway.app)
 
 ## 3. Déploiement
 - Clique sur "New Project" > "Deploy from GitHub repo"
@@ -20,7 +20,7 @@
 - Le build React (`npm run build`) est prêt à être servi sur Railway, Vercel ou Netlify
 
 ## 6. API
-- Accessible sur `/api` (ex: https://ton-sous-domaine.railway.app/api)
+- Accessible sur `/api` (ex: https://believable-motivation-production.up.railway.app/api)
 
 ---
 

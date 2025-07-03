@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './GaleriePhotos.css';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
 
 // URL de l'API à adapter selon ton backend
 const API_URL = 'https://believable-motivation-production.up.railway.app/api/photos';
@@ -25,43 +27,14 @@ const GaleriePhotos = () => {
   const [prises, setPrises] = useState([]);
 
   useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Erreur API');
-        const json = await res.json();
-        setData(json);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
+    const unsubPhotos = onSnapshot(collection(db, 'photos'), snap => setData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+    const unsubQr = onSnapshot(collection(db, 'scans_qr'), snap => setQrData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+    const unsubPrises = onSnapshot(collection(db, 'prises_poste'), snap => setPrises(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+    return () => {
+      unsubPhotos();
+      unsubQr();
+      unsubPrises();
     };
-    fetchPhotos();
-  }, []);
-
-  useEffect(() => {
-    const fetchQr = async () => {
-      try {
-        const res = await fetch(API_QR_URL);
-        if (!res.ok) throw new Error('Erreur API QR');
-        const json = await res.json();
-        setQrData(json);
-      } catch (e) {}
-    };
-    fetchQr();
-  }, []);
-
-  useEffect(() => {
-    const fetchPrises = async () => {
-      try {
-        const res = await fetch(API_PRISES_URL);
-        if (!res.ok) throw new Error('Erreur API prises');
-        const json = await res.json();
-        setPrises(json);
-      } catch (e) {}
-    };
-    fetchPrises();
   }, []);
 
   // Regrouper par opérateur puis par jour

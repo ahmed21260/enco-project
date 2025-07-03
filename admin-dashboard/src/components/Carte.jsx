@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
 // Fix pour les icônes Leaflet
@@ -35,13 +35,14 @@ const Carte = () => {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [incidents, setIncidents] = useState([]);
 
   // Centre de la carte (France)
   const defaultCenter = [46.603354, 1.888334];
 
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = onSnapshot(
+    const unsubscribePositions = onSnapshot(
       collection(db, 'positions_operateurs'),
       (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data());
@@ -54,7 +55,23 @@ const Carte = () => {
         setLoading(false);
       }
     );
-    return () => unsubscribe();
+    const unsubscribePositionsLog = onSnapshot(
+      collection(db, 'positions_log'),
+      (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data());
+        setPositions(prev => [...prev, ...data]);
+      }
+    );
+    // Ajout incidents non résolus
+    const q = query(collection(db, 'incidents'), where('handled', '==', false));
+    const unsubscribeIncidents = onSnapshot(q, (snapshot) => {
+      setIncidents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => {
+      unsubscribePositions();
+      unsubscribePositionsLog();
+      unsubscribeIncidents();
+    };
   }, []);
 
   if (loading) {
@@ -72,6 +89,10 @@ const Carte = () => {
       </div>
     );
   }
+
+  const handleResolveIncident = async (incidentId) => {
+    await db.collection('incidents').doc(incidentId).update({ handled: true });
+  };
 
   return (
     <div className="carte-container">
@@ -106,6 +127,25 @@ const Carte = () => {
                 <p><strong>Heure:</strong> {new Date(pos.timestamp).toLocaleString('fr-FR')}</p>
                 <p><strong>Position:</strong> {pos.latitude.toFixed(4)}, {pos.longitude.toFixed(4)}</p>
               </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {incidents.map((incident) => (
+          <Marker
+            key={`incident-${incident.id}`}
+            position={[incident.position.lat, incident.position.lng]}
+            icon={L.divIcon({
+              className: 'incident-marker',
+              html: `<div style="background:#e00;width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px #e005;display:flex;align-items:center;justify-content:center;font-size:18px;">❗</div>`
+            })}
+          >
+            <Popup>
+              <div style={{color:'#e00',fontWeight:'bold'}}>🆘 Urgence</div>
+              <div><b>Opérateur :</b> {incident.operateur_nom || incident.operateur_id}</div>
+              <div><b>Type :</b> {incident.type}</div>
+              <div><b>Heure :</b> {new Date(incident.heure).toLocaleString('fr-FR')}</div>
+              <div><b>Résoudre :</b> <button onClick={() => handleResolveIncident(incident.id)}>Marquer comme résolu</button></div>
             </Popup>
           </Marker>
         ))}

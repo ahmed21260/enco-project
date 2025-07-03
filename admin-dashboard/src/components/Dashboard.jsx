@@ -10,6 +10,8 @@ import Operateurs from './Operateurs';
 import BonsAttachement from './BonsAttachement';
 import { realtimeDb } from '../firebaseRealtime';
 import { ref, onValue } from 'firebase/database';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
 
 // Fix pour les icônes Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -58,44 +60,12 @@ const Dashboard = () => {
   // Centre de la carte (France)
   const defaultCenter = [46.603354, 1.888334];
 
-  const fetchPositions = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/positions/latest');
-      if (!response.ok) throw new Error('Erreur API');
-      const data = await response.json();
-      setPositions(data);
-      
-      // Calculer les stats
-      const enLigne = data.filter(pos => pos.type === 'prise_de_poste').length;
-      setStats({
-        totalOperateurs: data.length,
-        enLigne,
-        prisesPoste: data.filter(pos => pos.type === 'prise_de_poste').length,
-        anomalies: 0 // À connecter avec les anomalies
-      });
-      
-      setError(null);
-    } catch (err) {
-      setError('Erreur de connexion à l\'API');
-      console.error('Erreur fetch positions:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchPositions();
-    
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(fetchPositions, 30000);
-    // Récupérer les alertes urgences SNCF depuis Firebase (comme dans AlertesLive)
-    const alertesRef = ref(realtimeDb, 'alertes');
-    const unsubscribe = onValue(alertesRef, (snapshot) => {
-      const data = snapshot.val();
-      const arr = data ? Object.entries(data).map(([id, value]) => ({ id, ...value })) : [];
-      setAlertesUrgence(arr.filter(a => a.type === 'urgence'));
+    // Synchro temps réel Firestore
+    const unsub = onSnapshot(collection(db, 'positions_log'), (snap) => {
+      setPositions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return () => { clearInterval(interval); unsubscribe(); };
+    return () => unsub();
   }, []);
 
   const renderCarte = () => (
@@ -104,7 +74,6 @@ const Dashboard = () => {
         <h2>🗺️ Carte des Opérateurs ENCO</h2>
         <div className="carte-controls">
           <span className="operateurs-count">👥 {positions.length} opérateur(s)</span>
-          <button onClick={fetchPositions} className="refresh-btn">🔄 Actualiser</button>
         </div>
       </div>
       
@@ -301,7 +270,6 @@ const Dashboard = () => {
                activeTab === 'operateurs' ? 'Opérateurs' : 'Bons d\'attachement'}</h2>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span className="status">🟢 Système opérationnel</span>
-            <button onClick={fetchPositions}>🔄 Actualiser</button>
             {/* Bouton utilisateur admin */}
             <button style={{
               display: 'flex', alignItems: 'center', gap: 8,

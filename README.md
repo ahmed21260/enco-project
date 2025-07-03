@@ -59,14 +59,14 @@ npm install --legacy-peer-deps
 ```bash
 cd api
 npm start
-# Serveur accessible sur http://localhost:3001
+# Serveur accessible sur https://believable-motivation-production.up.railway.app/api
 ```
 
 #### Terminal 2 - Dashboard Admin
 ```bash
 cd admin-dashboard
 npm run dev
-# Dashboard accessible sur http://localhost:5173
+# Dashboard accessible sur https://believable-motivation-production.up.railway.app
 ```
 
 #### Terminal 3 - Bot Telegram

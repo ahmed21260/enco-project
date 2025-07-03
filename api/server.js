@@ -7,7 +7,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -247,7 +247,7 @@ app.post('/upload-bon-signe', upload.single('photo'), async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 API serveur démarré sur http://localhost:${PORT}`);
+    console.log(`\n🚀 API serveur démarré sur http://localhost:${PORT}`);
     console.log(`📡 Endpoints disponibles:`);
     console.log(`   - GET /api/positions (toutes les positions)`);
     console.log(`   - GET /api/positions/latest (dernières positions par opérateur)`);
