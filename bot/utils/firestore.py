@@ -15,7 +15,7 @@ if USE_FIRESTORE:
         else:
             cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
         initialize_app(cred, {
-            'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
+            'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
         })
     db = firestore.client()
 else:

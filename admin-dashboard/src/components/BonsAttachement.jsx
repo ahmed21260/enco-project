@@ -32,10 +32,16 @@ const BonsAttachement = () => {
   const [chantier, setChantier] = useState('');
   const [date, setDate] = useState('');
   const [lightbox, setLightbox] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const unsub = onSnapshot(collection(db, 'bons_attachement'), snap => {
       setBons(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (err) => {
+      setLoading(false);
+      setBons([]);
     });
     return () => unsub();
   }, []);
@@ -59,23 +65,27 @@ const BonsAttachement = () => {
         <button onClick={() => exportCSV(filtered)}>Exporter CSV</button>
       </div>
       <div className="bons-list">
-        {filtered.map(bon => (
+        {loading ? (
+          <div>Chargement…</div>
+        ) : filtered.length === 0 ? (
+          <div>Aucun bon d'attachement disponible</div>
+        ) : filtered.map(bon => (
           <div className="bon-card" key={bon.id}>
-            {bon.url || bon.photo ? (
+            {(bon.url || bon.photo || bon.urlDocument) ? (
               <img
-                src={bon.url || bon.photo}
-                alt={bon.details}
+                src={bon.url || bon.photo || bon.urlDocument}
+                alt={bon.details || bon.type || 'Bon'}
                 className="bon-photo"
                 style={{ cursor: 'pointer' }}
-                onClick={() => setLightbox(bon.url || bon.photo)}
+                onClick={() => setLightbox(bon.url || bon.photo || bon.urlDocument)}
                 onError={e => e.target.style.display='none'}
               />
             ) : null}
             <div className="bon-info">
               <h4>{bon.chantier} - {bon.date}</h4>
-              <p><b>Opérateur :</b> {bon.operateur}</p>
-              <p><b>Statut :</b> {bon.statut}</p>
-              <p><b>Détails :</b> {bon.details}</p>
+              <p><b>Opérateur :</b> {bon.operateur || bon.operatorId}</p>
+              <p><b>Statut :</b> {bon.statut || bon.status}</p>
+              <p><b>Détails :</b> {bon.details || bon.type}</p>
             </div>
           </div>
         ))}

@@ -112,20 +112,18 @@ const Operateurs = () => {
   const [bons, setBons] = useState([]);
   const [loadingFiche, setLoadingFiche] = useState(false);
   const [activeTab, setActiveTab] = useState('Infos');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubOperateurs = onSnapshot(collection(db, 'operateurs'), snap => setOperateurs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    const unsubPositions = onSnapshot(collection(db, 'positions_log'), snap => setPositions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    const unsubAnomalies = onSnapshot(collection(db, 'anomalies'), snap => setAnomalies(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    const unsubUrgences = onSnapshot(collection(db, 'incidents'), snap => setUrgences(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    const unsubMaintenance = onSnapshot(collection(db, 'maintenance_issues'), snap => setMaintenance(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    return () => {
-      unsubOperateurs();
-      unsubPositions();
-      unsubAnomalies();
-      unsubUrgences();
-      unsubMaintenance();
-    };
+    setLoading(true);
+    const unsub = onSnapshot(collection(db, 'operateurs'), snap => {
+      setOperateurs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (err) => {
+      setLoading(false);
+      setOperateurs([]);
+    });
+    return () => unsub();
   }, []);
 
   const fetchFicheOperateur = async (operatorId) => {
@@ -199,8 +197,12 @@ const Operateurs = () => {
         className="search-input"
       />
       <div className="operateurs-list">
-        {filtered.map(op => (
-          <div className="operateur-card" key={op.operatorId} style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setSelected(op)}>
+        {loading ? (
+          <div>Chargement…</div>
+        ) : operateurs.length === 0 ? (
+          <div>Aucun opérateur disponible</div>
+        ) : operateurs.map(op => (
+          <div className="operateur-card" key={op.id} style={{ cursor: 'pointer', position: 'relative' }} onClick={() => setSelected(op)}>
             <div className="operateur-info">
               <h4>{op.nom}</h4>
             </div>
