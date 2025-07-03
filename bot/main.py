@@ -37,9 +37,10 @@ if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
 else:
     cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
 
-firebase_admin.initialize_app(cred, {
-    'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
-})
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
+    })
 
 API_URL = os.getenv("API_URL", "http://localhost:3001/api")
 
