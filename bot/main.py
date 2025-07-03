@@ -37,7 +37,7 @@ try:
         MessageHandler,
         filters,
         ContextTypes,
-    )  # type: ignore[import-untyped]
+    )  # type: ignore
 except ModuleNotFoundError as exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "python-telegram-bot n'est pas installé. Exécutez 'pip install python-telegram-bot[webhooks]'."
@@ -55,17 +55,17 @@ from handlers.portail import portail_sncf, portail_callback
 from handlers.photo import handle_photo, handle_voice
 
 try:
-    from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import]
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 except ModuleNotFoundError as exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "APScheduler n'est pas installé. Exécutez 'pip install APScheduler'."
     ) from exc
 
-from telegram import Bot, Update  # type: ignore[import-untyped]
+from telegram import Bot, Update  # type: ignore
 
 try:
-    import firebase_admin  # type: ignore[import]
-    from firebase_admin import credentials  # type: ignore[import]
+    import firebase_admin  # type: ignore
+    from firebase_admin import credentials  # type: ignore
 except ModuleNotFoundError as exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "firebase-admin n'est pas installé. Exécutez 'pip install firebase-admin'."
