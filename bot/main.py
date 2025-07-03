@@ -81,6 +81,11 @@ async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"[LOG] Message reçu : {update}")
+    try:
+        if update.message:
+            print(f"[LOG] Texte : {update.message.text}")
+    except Exception as e:
+        print(f"❌ ERREUR dans log_update : {e}")
 
 def main():
     if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "your_telegram_bot_token_here":
@@ -124,13 +129,17 @@ def main():
     print("✅ Bot ENCO démarré et en écoute sur Telegram...")
     print("🔗 Test avec /start ou /test sur ton bot")
     print("📱 Tous les boutons du menu sont maintenant fonctionnels !")
+    print("VERSION DEBUG 2025-07-03")
     PORT = int(os.environ.get("PORT", 8080))
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        webhook_path="/webhook",
+        url_path="webhook",
         webhook_url="https://sparkling-wonder-production-39a8.up.railway.app/webhook"
     )
 
 if __name__ == "__main__":
-    main() 
+    try:
+        main()
+    except Exception as e:
+        print(f"❌ ERREUR FATALE : {e}") 
