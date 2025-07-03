@@ -1,0 +1,12 @@
+[
+  {
+    "id": "op1",
+    "telegram_id": 123456789,
+    "nom": "OperateurTest1"
+  },
+  {
+    "id": "op2",
+    "telegram_id": 111111,
+    "nom": "OperateurTest2"
+  }
+]
