@@ -30,14 +30,14 @@ except ModuleNotFoundError as exc:  # pragma: no cover
 load_dotenv()
 
 try:
-    from telegram.ext import (
+    from telegram.ext import (  # type: ignore[import-untyped]
         ApplicationBuilder,
         CommandHandler,
         CallbackQueryHandler,
         MessageHandler,
         filters,
         ContextTypes,
-    )  # type: ignore[import-untyped]
+    )
 except ModuleNotFoundError as exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "python-telegram-bot n'est pas installé. Exécutez 'pip install python-telegram-bot[webhooks]'."
