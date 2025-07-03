@@ -1,4 +1,5 @@
 python-telegram-bot
 firebase-admin
 python-dotenv
-Pillow 
+Pillow
+APScheduler 
