@@ -247,9 +247,19 @@ app.post('/upload-bon-signe', upload.single('photo'), async (req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-  console.log('✅ Route /health prête');
+app.get('/health', async (req, res) => {
+  try {
+    const payload = {
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: Date.now()
+    };
+    res.status(200).json(payload);
+    console.log('✅ Health check OK', payload);
+  } catch (err) {
+    console.error('❌ Health check error:', err);
+    res.status(500).json({ status: 'error', message: err?.message || 'unknown' });
+  }
 });
 
 app.listen(PORT, () => {

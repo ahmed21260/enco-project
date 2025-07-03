@@ -19,6 +19,7 @@ from utils.firestore import db
 import firebase_admin
 from firebase_admin import credentials
 import json
+from typing import Final
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG if os.getenv("ENCO_DEBUG", "0") == "1" else logging.INFO
@@ -70,6 +71,12 @@ async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text("Rappel envoyé à tous les opérateurs inscrits !")
 
+async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Commande de test simple pour vérifier que le webhook fonctionne."""
+    logging.info("[PING] Reçu /ping depuis %s", update.effective_user.id if update.effective_user else "unknown")
+    if update.message:
+        await update.message.reply_text("pong 🏓")
+
 def schedule_reminders():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_daily_reminder, 'cron', hour=19, minute=0)
@@ -102,6 +109,7 @@ def main():
     application.add_error_handler(error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
     application.add_handler(CommandHandler("test_rappel", test_rappel))
+    application.add_handler(CommandHandler("ping", ping))
     for handler in get_menu_handlers():
         application.add_handler(handler)
     application.add_handler(prise_handler())
