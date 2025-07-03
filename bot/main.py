@@ -20,6 +20,8 @@ from utils.firestore import db
 import firebase_admin
 from firebase_admin import credentials
 import json
+from flask import Flask, request, Response
+import threading
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG if os.getenv("ENCO_DEBUG", "0") == "1" else logging.INFO
@@ -51,6 +53,9 @@ if not firebase_admin._apps:
     })
 
 API_URL = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api")
+
+# Flask app pour gérer le webhook manuellement
+app = Flask(__name__)
 
 async def send_daily_reminder():
     operateurs = db.collection('operateurs').stream()
@@ -98,8 +103,60 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
+# Point 1 & 2 : Handler webhook personnalisé avec logs et protection
+@app.route(f'/{WEBHOOK_PATH}', methods=['POST'])
+def webhook_handler():
+    try:
+        # Récupérer le payload JSON
+        data = request.get_json(force=True)
+        
+        # Point 1 : Log du payload reçu
+        logging.info(f"🔍 PAYLOAD reçu sur /webhook: {json.dumps(data, indent=2)}")
+        
+        # Point 2 : Vérification que c'est un vrai update Telegram
+        if not isinstance(data, dict):
+            logging.warning("❌ Payload reçu n'est pas un dictionnaire JSON")
+            return "Invalid JSON format", 400
+            
+        if "update_id" not in data:
+            logging.warning("❌ Payload sans update_id reçu, ignoré (pas un update Telegram)")
+            return "Not a Telegram update", 400
+            
+        # Point 3 : Vérification du format attendu
+        required_fields = ["update_id"]
+        for field in required_fields:
+            if field not in data:
+                logging.warning(f"❌ Champ requis '{field}' manquant dans le payload")
+                return f"Missing required field: {field}", 400
+        
+        # Point 4 : Traitement sécurisé de l'update
+        try:
+            update = Update.de_json(data, bot)
+            logging.info(f"✅ Update Telegram valide reçu (ID: {update.update_id})")
+            
+            # Traiter l'update avec l'application de manière asynchrone
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(application.process_update(update))
+            finally:
+                loop.close()
+            
+            return "OK", 200
+            
+        except Exception as e:
+            logging.error(f"❌ Erreur lors du traitement de l'update: {e}")
+            return "Error processing update", 500
+            
+    except Exception as e:
+        logging.error(f"❌ Erreur générale dans webhook_handler: {e}")
+        return "Internal server error", 500
+
 def main():
-    application = ApplicationBuilder().token(BOT_TOKEN).post_init(on_startup).build()
+    global application
+    # BOT_TOKEN est déjà vérifié plus haut, donc on peut forcer le type
+    application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
     application.add_error_handler(error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
     application.add_handler(CommandHandler("test_rappel", test_rappel))
@@ -117,15 +174,13 @@ def main():
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
     application.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
+    
     logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram sur le port {PORT} !")
     logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")
-    logging.info("VERSION DEBUG 2025-07-04")
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=WEBHOOK_PATH,
-        webhook_url=WEBHOOK_URL
-    )
+    logging.info("VERSION DEBUG 2025-07-04 - WEBHOOK SECURISE")
+    
+    # Démarrer Flask avec le handler personnalisé
+    app.run(host="0.0.0.0", port=PORT, debug=False)
 
 if __name__ == "__main__":
     try:
