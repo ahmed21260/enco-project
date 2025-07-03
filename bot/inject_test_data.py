@@ -34,6 +34,61 @@ db.collection("operateurs").add({
     ]
 })
 
+# 2. Ajout opérateur LRTP
+lprtp_id = db.collection("operateurs").add({
+    "nom": "LRTP",
+    "prenom": "Laurent",
+    "poste": "Chef de chantier",
+    "photo": "https://via.placeholder.com/100x100.png?text=LRTP",
+    "dernierPoste": "2024-07-02 07:45",
+    "nbPrises": 8,
+    "telegram_id": 987654321,
+    "prises": [
+        {
+            "date": "2024-07-02 07:45",
+            "machine": "MECALAC 12MTX",
+            "photo": "https://via.placeholder.com/100x100.png?text=LRTP"
+        }
+    ]
+})
+# Position LRTP
+positions_ref = db.collection("positions_log")
+positions_ref.add({
+    "operateur_id": "LRTP",
+    "nom": "Laurent LRTP",
+    "latitude": 48.8584,
+    "longitude": 2.2945,
+    "timestamp": "2024-07-02T07:45:00Z",
+    "type": "prise_de_poste"
+})
+
+# 3. Ajout opérateur Freddy Debove
+freddy_id = db.collection("operateurs").add({
+    "nom": "Debove",
+    "prenom": "Freddy",
+    "poste": "Conducteur Pelle",
+    "photo": "https://via.placeholder.com/100x100.png?text=Freddy",
+    "dernierPoste": "2024-07-02 08:10",
+    "nbPrises": 15,
+    "telegram_id": 192837465,
+    "prises": [
+        {
+            "date": "2024-07-02 08:10",
+            "machine": "CAT 323 M",
+            "photo": "https://via.placeholder.com/100x100.png?text=Freddy"
+        }
+    ]
+})
+# Position Freddy Debove
+positions_ref.add({
+    "operateur_id": "Freddy Debove",
+    "nom": "Freddy Debove",
+    "latitude": 48.8667,
+    "longitude": 2.3333,
+    "timestamp": "2024-07-02T08:10:00Z",
+    "type": "prise_de_poste"
+})
+
 # 2. Ajout d'un bon d'attachement
 db.collection("bons_attachement").add({
     "chantier": "Chantier A",
