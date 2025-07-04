@@ -253,7 +253,8 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 API serveur démarré sur http://localhost:${PORT}`);
+    const publicUrl = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+    console.log(`\n🚀 API serveur démarré sur ${publicUrl}`);
     console.log(`📡 Endpoints disponibles:`);
     console.log(`   - GET /api/positions (toutes les positions)`);
     console.log(`   - GET /api/positions/latest (dernières positions par opérateur)`);

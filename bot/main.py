@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from handlers.menu import menu_principal, handle_menu
-from handlers.prise_de_poste import get_handler as prise_handler
+from handlers.prise_de_poste import get_prise_wizard_handler as prise_handler
 from handlers.fin_de_poste import get_handler as fin_handler
 from handlers.checklist import get_checklist_handler
 from handlers.anomalie import get_anomalie_handler
