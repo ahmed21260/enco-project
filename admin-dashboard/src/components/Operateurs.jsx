@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './Operateurs.css';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
 const API_OPERATEURS = 'https://believable-motivation-production.up.railway.app/api/operateurs';
@@ -126,62 +126,126 @@ const Operateurs = () => {
     return () => unsub();
   }, []);
 
-  const fetchFicheOperateur = async (operatorId) => {
-    setLoadingFiche(true);
-    const qPrises = query(collection(db, 'prises_poste'), where('operatorId', '==', operatorId));
-    const prisesSnap = await getDocs(qPrises);
-    const prisesData = prisesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    let allPhotos = [], allBons = [], allAnomalies = [], allUrgences = [], allMaintenance = [], allHistorique = [];
-    for (const prise of prisesData) {
-      const qPhotos = query(collection(db, 'photos'), where('priseId', '==', prise.id));
-      const photosSnap = await getDocs(qPhotos);
-      allPhotos = allPhotos.concat(photosSnap.docs.map(doc => ({ ...doc.data(), priseId: prise.id })));
-      const qBons = query(collection(db, 'bons_attachement'), where('priseId', '==', prise.id));
-      const bonsSnap = await getDocs(qBons);
-      allBons = allBons.concat(bonsSnap.docs.map(doc => ({ ...doc.data(), priseId: prise.id })));
-      const qAnomalies = query(collection(db, 'anomalies'), where('priseId', '==', prise.id));
-      const anomaliesSnap = await getDocs(qAnomalies);
-      allAnomalies = allAnomalies.concat(anomaliesSnap.docs.map(doc => ({ ...doc.data(), priseId: prise.id })));
-      const qUrgences = query(collection(db, 'incidents'), where('priseId', '==', prise.id));
-      const urgencesSnap = await getDocs(qUrgences);
-      allUrgences = allUrgences.concat(urgencesSnap.docs.map(doc => ({ ...doc.data(), priseId: prise.id })));
-      const qMaintenance = query(collection(db, 'maintenance_issues'), where('priseId', '==', prise.id));
-      const maintenanceSnap = await getDocs(qMaintenance);
-      allMaintenance = allMaintenance.concat(maintenanceSnap.docs.map(doc => ({ ...doc.data(), priseId: prise.id })));
-      // Historique = union de tout
-      allHistorique = allHistorique.concat(
-        [{ type: 'prise', ...prise }],
-        photosSnap.docs.map(doc => ({ type: 'photo', ...doc.data() })),
-        bonsSnap.docs.map(doc => ({ type: 'bon', ...doc.data() })),
-        anomaliesSnap.docs.map(doc => ({ type: 'anomalie', ...doc.data() })),
-        urgencesSnap.docs.map(doc => ({ type: 'urgence', ...doc.data() })),
-        maintenanceSnap.docs.map(doc => ({ type: 'maintenance', ...doc.data() }))
-      );
-    }
-    allHistorique.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
-    setPrises(prisesData);
-    setPhotos(allPhotos);
-    setBons(allBons);
-    setAnomalies(allAnomalies);
-    setUrgences(allUrgences);
-    setMaintenance(allMaintenance);
-    setHistorique(allHistorique);
+  // Fonction pour mettre à jour les stats basées sur les données actuelles
+  const updateStats = (prisesData, photosData, bonsData, anomaliesData, urgencesData, maintenanceData) => {
     setStats({
       prises: prisesData.length,
-      photos: allPhotos.length,
-      bons: allBons.length,
-      anomalies: allAnomalies.length,
-      urgences: allUrgences.length,
-      maintenance: allMaintenance.length
+      photos: photosData.length,
+      bons: bonsData.length,
+      anomalies: anomaliesData.length,
+      urgences: urgencesData.length,
+      maintenance: maintenanceData.length
     });
-    setLoadingFiche(false);
-    setActiveTab('Infos');
+  };
+
+  // Fonction pour mettre à jour l'historique basé sur toutes les données
+  const updateHistorique = (prisesData, photosData, bonsData, anomaliesData, urgencesData, maintenanceData) => {
+    const allHistorique = [
+      ...prisesData.map(prise => ({ type: 'prise', ...prise })),
+      ...photosData.map(photo => ({ type: 'photo', ...photo })),
+      ...bonsData.map(bon => ({ type: 'bon', ...bon })),
+      ...anomaliesData.map(anomalie => ({ type: 'anomalie', ...anomalie })),
+      ...urgencesData.map(urgence => ({ type: 'urgence', ...urgence })),
+      ...maintenanceData.map(maintenance => ({ type: 'maintenance', ...maintenance }))
+    ];
+    allHistorique.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+    setHistorique(allHistorique);
   };
 
   useEffect(() => {
-    if (selected && selected.operatorId) {
-      fetchFicheOperateur(selected.operatorId);
+    if (!selected || !selected.operatorId) {
+      // Nettoyer les données si aucun opérateur sélectionné
+      setPrises([]);
+      setPhotos([]);
+      setBons([]);
+      setAnomalies([]);
+      setUrgences([]);
+      setMaintenance([]);
+      setHistorique([]);
+      setStats({});
+      setLoadingFiche(false);
+      return;
     }
+
+    setLoadingFiche(true);
+    
+    // Abonnement aux prises de poste de l'opérateur
+    const qPrises = query(collection(db, 'prises_poste'), where('operatorId', '==', selected.operatorId));
+    const unsubPrises = onSnapshot(qPrises, (prisesSnap) => {
+      const prisesData = prisesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPrises(prisesData);
+      
+      // Mettre à jour les stats et l'historique avec les nouvelles données
+      updateStats(prisesData, photos, bons, anomalies, urgences, maintenance);
+      updateHistorique(prisesData, photos, bons, anomalies, urgences, maintenance);
+      setLoadingFiche(false);
+      setActiveTab('Infos');
+    });
+
+    // Abonnement aux photos de l'opérateur
+    const qPhotos = query(collection(db, 'photos'), where('operatorId', '==', selected.operatorId));
+    const unsubPhotos = onSnapshot(qPhotos, (photosSnap) => {
+      const photosData = photosSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setPhotos(photosData);
+      
+      // Mettre à jour les stats et l'historique
+      updateStats(prises, photosData, bons, anomalies, urgences, maintenance);
+      updateHistorique(prises, photosData, bons, anomalies, urgences, maintenance);
+    });
+
+    // Abonnement aux bons d'attachement de l'opérateur
+    const qBons = query(collection(db, 'bons_attachement'), where('operatorId', '==', selected.operatorId));
+    const unsubBons = onSnapshot(qBons, (bonsSnap) => {
+      const bonsData = bonsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setBons(bonsData);
+      
+      // Mettre à jour les stats et l'historique
+      updateStats(prises, photos, bonsData, anomalies, urgences, maintenance);
+      updateHistorique(prises, photos, bonsData, anomalies, urgences, maintenance);
+    });
+
+    // Abonnement aux anomalies de l'opérateur
+    const qAnomalies = query(collection(db, 'anomalies'), where('operatorId', '==', selected.operatorId));
+    const unsubAnomalies = onSnapshot(qAnomalies, (anomaliesSnap) => {
+      const anomaliesData = anomaliesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setAnomalies(anomaliesData);
+      
+      // Mettre à jour les stats et l'historique
+      updateStats(prises, photos, bons, anomaliesData, urgences, maintenance);
+      updateHistorique(prises, photos, bons, anomaliesData, urgences, maintenance);
+    });
+
+    // Abonnement aux urgences de l'opérateur
+    const qUrgences = query(collection(db, 'incidents'), where('operatorId', '==', selected.operatorId));
+    const unsubUrgences = onSnapshot(qUrgences, (urgencesSnap) => {
+      const urgencesData = urgencesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setUrgences(urgencesData);
+      
+      // Mettre à jour les stats et l'historique
+      updateStats(prises, photos, bons, anomalies, urgencesData, maintenance);
+      updateHistorique(prises, photos, bons, anomalies, urgencesData, maintenance);
+    });
+
+    // Abonnement aux incidents de maintenance de l'opérateur
+    const qMaintenance = query(collection(db, 'maintenance_issues'), where('operatorId', '==', selected.operatorId));
+    const unsubMaintenance = onSnapshot(qMaintenance, (maintenanceSnap) => {
+      const maintenanceData = maintenanceSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      setMaintenance(maintenanceData);
+      
+      // Mettre à jour les stats et l'historique
+      updateStats(prises, photos, bons, anomalies, urgences, maintenanceData);
+      updateHistorique(prises, photos, bons, anomalies, urgences, maintenanceData);
+    });
+
+    // Nettoyer tous les abonnements quand l'opérateur change ou le composant se démonte
+    return () => {
+      unsubPrises();
+      unsubPhotos();
+      unsubBons();
+      unsubAnomalies();
+      unsubUrgences();
+      unsubMaintenance();
+    };
   }, [selected]);
 
   const filtered = operateurs.filter(op => (op.nom || '').toLowerCase().includes(search.toLowerCase()));
