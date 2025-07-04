@@ -8,7 +8,7 @@ from handlers.bons_attachement import start_bon_wizard
 from handlers.outils_ferroviaires import start_outils_ferroviaires, handle_outils_ferroviaires
 from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
-from handlers.urgence import urgence, hors_voie
+from handlers.urgence import start_urgence_wizard
 from handlers.portail import portail_sncf
 from handlers.planning import start_planning_wizard
 from utils.firestore import db
@@ -52,7 +52,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📄 Bon d'attachement":
         await start_bon_wizard(update, context)
     elif text == "🛑 URGENCE / INCIDENT":
-        await urgence(update, context)
+        await start_urgence_wizard(update, context)
     elif text == "🔧 Déclarer une panne":
         await start_anomalie_wizard(update, context)
     elif text == "🗺️ Outils ferroviaires":
@@ -237,7 +237,7 @@ def get_menu_handlers():
     return [
         MessageHandler(filters.Regex("^Fin de poste$"), start_fin_wizard),
         MessageHandler(filters.Regex("^Checklist sécurité$"), start_checklist),
-        MessageHandler(filters.Regex("^Mise hors voie urgente$"), hors_voie),
+        # MessageHandler(filters.Regex("^Mise hors voie urgente$"), hors_voie),
         MessageHandler(filters.Regex("^Portail d'accès SNCF$"), portail_sncf),
         MessageHandler(filters.Regex("^Fiches techniques$"), consulter_documents),
         MessageHandler(filters.Regex("^Historique$"), afficher_historique),
