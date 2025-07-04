@@ -4,7 +4,7 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from handlers.menu import get_menu_handlers
+from handlers.menu import get_menu_handlers, menu_principal, handle_menu
 from handlers.prise_de_poste import get_handler as prise_handler
 from handlers.fin_de_poste import get_handler as fin_handler
 from handlers.checklist import get_checklist_handler
@@ -115,17 +115,29 @@ async def webhook_error_handler(update, context):
 def main():
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
     application.add_error_handler(webhook_error_handler)
+    
+    # Ajouter le handler de logging en premier
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
+    
+    # Ajouter les handlers de commandes en premier
+    application.add_handler(CommandHandler("start", menu_principal))
     application.add_handler(CommandHandler("test_rappel", test_rappel))
+    application.add_handler(CommandHandler("docs", consulter_documents))
+    application.add_handler(CommandHandler("historique", afficher_historique))
+    
+    # Ajouter les handlers de menu
     for handler in get_menu_handlers():
         application.add_handler(handler)
+    
+    # Ajouter le handler de texte général pour les messages non-commandes
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
+    
+    # Ajouter les handlers spécifiques
     application.add_handler(prise_handler())
     application.add_handler(fin_handler())
     application.add_handler(get_checklist_handler())
     application.add_handler(get_urgence_handler())
     application.add_handler(get_anomalie_handler())
-    application.add_handler(CommandHandler("docs", consulter_documents))
-    application.add_handler(CommandHandler("historique", afficher_historique))
     application.add_handler(MessageHandler(filters.Regex("^Portail d'accès SNCF$"), portail_sncf))
     application.add_handler(CallbackQueryHandler(portail_callback))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))

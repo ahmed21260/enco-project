@@ -235,9 +235,6 @@ async def apitest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def get_menu_handlers():
     return [
-        CommandHandler("start", menu_principal),
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu),
-        get_anomalie_handler(),
         MessageHandler(filters.Regex("^Partager ma position$"), start_prise),
         MessageHandler(filters.Regex("^Fin de poste$"), start_fin),
         MessageHandler(filters.Regex("^Checklist sécurité$"), start_checklist),
@@ -246,13 +243,6 @@ def get_menu_handlers():
         MessageHandler(filters.Regex("^Fiches techniques$"), consulter_documents),
         MessageHandler(filters.Regex("^Historique$"), afficher_historique),
         MessageHandler(filters.Regex("^Paramètres$"), aide),
-        # SUPPRESSION: MessageHandler(filters.Regex("^📦 Scanner QR code$"), scan_qr_start),
-        # SUPPRESSION: MessageHandler(filters.PHOTO, scan_qr_photo),
-        # SUPPRESSION: MessageHandler(filters.Regex("^Prise de poste$"), prise_poste_and_scan_qr),
-        # SUPPRESSION: MessageHandler(filters.PHOTO, scan_qr_photo_linked),
         MessageHandler(filters.Regex("^🛠️ Déclarer une panne machine$"), declare_panne_start),
-        MessageHandler(filters.TEXT & ~filters.COMMAND, declare_panne_type),
-        MessageHandler(filters.PHOTO, declare_panne_photo),
-        MessageHandler(filters.TEXT & ~filters.COMMAND, declare_panne_commentaire),
         CommandHandler("apitest", apitest_handler)
     ] 
