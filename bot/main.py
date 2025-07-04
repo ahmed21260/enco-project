@@ -38,19 +38,26 @@ WEBHOOK_PATH = "webhook"
 WEBHOOK_URL = "https://enco-prestarail-bot.railway.app/webhook"
 bot = Bot(token=BOT_TOKEN)
 
-if not os.getenv('ENCO_USE_FIRESTORE', '0') == '1':
-    logging.error('❌ ERREUR : ENCO_USE_FIRESTORE=1 doit être défini dans le .env pour activer Firebase !')
-    exit(1)
+# Initialisation Firebase avec gestion d'erreurs
+try:
+    if os.getenv('ENCO_USE_FIRESTORE', '0') == '1':
+        if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
+            cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
+        else:
+            cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
 
-if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
-    cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
-else:
-    cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred, {
-        'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
-    })
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred, {
+                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
+            })
+        logging.info("✅ Firebase initialisé avec succès")
+    else:
+        logging.warning("⚠️  Firebase désactivé (ENCO_USE_FIRESTORE != 1)")
+except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
+    logging.error(f"❌ Erreur Firebase credentials: {e}")
+    logging.warning("🔄 Mode temporaire activé - Bot fonctionnera sans Firebase")
+    # Désactiver Firebase pour ce run
+    os.environ['ENCO_USE_FIRESTORE'] = '0'
 
 API_URL = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api")
 

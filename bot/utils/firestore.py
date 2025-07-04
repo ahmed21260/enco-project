@@ -6,18 +6,25 @@ from firebase_admin import credentials, initialize_app
 
 # --- MODE FIRESTORE ---
 USE_FIRESTORE = os.getenv('ENCO_USE_FIRESTORE', '0') == '1'
+db = None
 
 if USE_FIRESTORE:
     from firebase_admin import firestore, storage
-    if not firebase_admin._apps:
-        if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
-            cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
-        else:
-            cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
-        initialize_app(cred, {
-            'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
-        })
-    db = firestore.client()
+    try:
+        if not firebase_admin._apps:
+            if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
+                cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
+            else:
+                cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
+            initialize_app(cred, {
+                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
+            })
+        db = firestore.client()
+    except (json.JSONDecodeError, KeyError, FileNotFoundError, ValueError, Exception) as e:
+        print(f"⚠️  Erreur Firebase credentials: {e}")
+        print("🔄 Mode temporaire activé - Firebase désactivé")
+        USE_FIRESTORE = False
+        db = None
 else:
     print("⚠️  Mode temporaire : Firebase désactivé pour les tests")
 
@@ -27,28 +34,41 @@ LOG_PATH = os.path.join(BASE_DIR, '../positions_log.jsonl')
 
 # --- POSITIONS ---
 def save_position(data):
-    if USE_FIRESTORE:
-        # Historique complet
-        db.collection('positions_log').add(data)
-        # Position courante (ping live)
-        doc_id = str(data.get('operateur_id') or data.get('operatorId'))
-        db.collection('positions_operateurs').document(doc_id).set(data)
-        # Fiche opérateur
-        db.collection('operateurs').document(doc_id).set({
-            'operateur_id': doc_id,
-            'nom': str(data.get('nom', '')),
-            'telegram_id': str(data.get('operateur_id', '')),
-            'actif': True,
-            'updatedAt': str(data.get('timestamp')),
-        }, merge=True)
+    print(f"🔍 DEBUG: save_position appelée avec: {data}")
+    
+    if USE_FIRESTORE and db:
+        print("🔍 DEBUG: Mode Firebase activé, sauvegarde dans Firestore")
+        try:
+            # Historique complet
+            db.collection('positions_log').add(data)
+            print("✅ DEBUG: Position ajoutée à positions_log")
+            
+            # Position courante (ping live)
+            doc_id = str(data.get('operateur_id') or data.get('operatorId'))
+            db.collection('positions_operateurs').document(doc_id).set(data)
+            print(f"✅ DEBUG: Position mise à jour pour opérateur {doc_id}")
+            
+            # Fiche opérateur
+            db.collection('operateurs').document(doc_id).set({
+                'operateur_id': doc_id,
+                'nom': str(data.get('nom', '')),
+                'telegram_id': str(data.get('operateur_id', '')),
+                'actif': True,
+                'updatedAt': str(data.get('timestamp')),
+            }, merge=True)
+            print(f"✅ DEBUG: Fiche opérateur mise à jour pour {doc_id}")
+        except Exception as e:
+            print(f"❌ DEBUG: Erreur Firebase: {e}")
     else:
-        print(f"📍 Position sauvegardée (mode test): {data}")
+        print(f"📍 DEBUG: Mode test local - Position sauvegardée: {data}")
         # Sauvegarde temporaire dans un fichier local
         try:
             with open(os.path.join(BASE_DIR, '../positions_temp.json'), 'a') as f:
                 f.write(json.dumps(data) + '\n')
-        except:
-            pass
+            print("✅ DEBUG: Position sauvegardée dans positions_temp.json")
+        except Exception as e:
+            print(f"❌ DEBUG: Erreur sauvegarde temp: {e}")
+        
         # Log spécial pour dashboard carte
         try:
             # Crée le fichier s'il n'existe pas
@@ -64,13 +84,15 @@ def save_position(data):
                     'longitude': data.get('longitude'),
                     'type': data.get('type')
                 }) + '\n')
-            print(f"🗺️  Position loggée pour dashboard: {data.get('latitude')}, {data.get('longitude')}")
+            print(f"🗺️  DEBUG: Position loggée pour dashboard: {data.get('latitude')}, {data.get('longitude')}")
         except Exception as e:
-            print(f"Erreur log position: {e}")
+            print(f"❌ DEBUG: Erreur log position: {e}")
+    
+    print("🔍 DEBUG: save_position terminée")
 
 # --- CHECKLISTS ---
 def save_checklist(user_id, data):
-    if USE_FIRESTORE:
+    if USE_FIRESTORE and db:
         db.collection('checklists').add({'operateur_id': user_id, **data})
     else:
         print(f"✅ Checklist sauvegardée (mode test): {user_id} - {data}")
@@ -83,7 +105,7 @@ def save_checklist(user_id, data):
 
 # --- ANOMALIES ---
 def save_anomalie(data):
-    if USE_FIRESTORE:
+    if USE_FIRESTORE and db:
         db.collection('anomalies').add(data)
     else:
         print(f"🚨 Anomalie sauvegardée (mode test): {data}")
@@ -95,7 +117,7 @@ def save_anomalie(data):
 
 # --- URGENCES ---
 def save_urgence(data):
-    if USE_FIRESTORE:
+    if USE_FIRESTORE and db:
         db.collection('incidents').add(data)
     else:
         print(f"🚨 Urgence sauvegardée (mode test): {data}")
@@ -107,7 +129,7 @@ def save_urgence(data):
 
 # --- HISTORIQUE ---
 def get_historique(operateur_id, limit=10):
-    if USE_FIRESTORE:
+    if USE_FIRESTORE and db:
         positions = db.collection('positions_operateurs').where('operateur_id', '==', operateur_id).order_by('timestamp', direction='DESCENDING').limit(limit).stream()
         anomalies = db.collection('anomalies').where('operateur_id', '==', operateur_id).order_by('timestamp', direction='DESCENDING').limit(limit).stream()
         checklists = db.collection('checklists').where('operateur_id', '==', operateur_id).order_by('timestamp', direction='DESCENDING').limit(limit).stream()
@@ -137,7 +159,7 @@ def get_historique(operateur_id, limit=10):
 
 # --- DOCUMENTS ---
 def get_documents():
-    if USE_FIRESTORE:
+    if USE_FIRESTORE and db:
         docs = db.collection('documents').stream()
         return [d.to_dict() for d in docs]
     else:
@@ -149,7 +171,7 @@ def get_documents():
 
 def upload_photo_to_storage(local_path, storage_path):
     """Upload une photo locale sur Firebase Storage et retourne l'URL publique ou None en cas d'échec."""
-    if USE_FIRESTORE:
+    if USE_FIRESTORE and db:
         try:
             bucket = storage.bucket()
             blob = bucket.blob(storage_path)
