@@ -5,7 +5,7 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from handlers.menu import menu_principal, handle_menu
+from handlers.menu import menu_principal, handle_menu, start
 from handlers.prise_de_poste import get_prise_wizard_handler as prise_handler
 from handlers.fin_de_poste import get_fin_wizard_handler as fin_handler
 from handlers.checklist import get_checklist_handler
@@ -101,10 +101,6 @@ async def ping(update, context):
         await update.message.reply_text("pong")
     else:
         print(f"update.message est None ! update = {update}")
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.info("✅ Handler /start bien exécuté !")
-    await update.message.reply_text("Bienvenue sur le bot ENCO !")
 
 def schedule_reminders():
     scheduler = AsyncIOScheduler()
