@@ -1,5 +1,6 @@
 # redeploy trigger 2025-07-04
 import os
+import asyncio
 import logging
 from dotenv import load_dotenv
 load_dotenv()
@@ -103,18 +104,25 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.info("[UPDATE] Photo reçue (%d variantes)", len(update.message.photo))
 
 async def error_handler(update, context):
-    logging.error(msg="Exception while handling an update:", exc_info=context.error)
-
-async def webhook_error_handler(update, context):
-    """Gestionnaire d'erreur spécifique pour les webhooks invalides"""
-    if context.error and "unexpected keyword argument 'type'" in str(context.error):
-        logging.warning("🚫 Requête non-Telegram ignorée (probablement notification Railway)")
+    """Gestionnaire d'erreur global"""
+    error_msg = str(context.error) if context.error else "Unknown error"
+    
+    # Ignorer les erreurs de parsing des requêtes non-Telegram
+    if any(keyword in error_msg for keyword in [
+        "unexpected keyword argument 'type'",
+        "missing 1 required positional argument: 'update_id'",
+        "got an unexpected keyword argument"
+    ]):
+        logging.warning("🚫 Requête non-Telegram ignorée (Railway notification)")
         return
-    logging.error(msg="Exception while handling an update:", exc_info=context.error)
+    
+    # Log des autres erreurs
+    logging.error(f"❌ Erreur lors du traitement d'un update: {error_msg}")
+    if update:
+        logging.error(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
 
 def main():
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
-    application.add_error_handler(webhook_error_handler)
     
     # Ajouter le handler de logging en premier
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
@@ -143,6 +151,7 @@ def main():
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
     application.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
+    application.add_error_handler(error_handler)
 
     logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram en mode webhook sur le port {PORT} !")
     logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")
