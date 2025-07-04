@@ -121,7 +121,7 @@ def generate_env_template():
 BOT_TOKEN=your_telegram_bot_token_here
 ENCO_USE_FIRESTORE=1
 FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"your-project","private_key_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n","client_email":"...","client_id":"...","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"...","universe_domain":"googleapis.com"}
-FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+FIREBASE_STORAGE_BUCKET=enco-prestarail.appspot.com
 PORT=8080
 
 # Variables optionnelles

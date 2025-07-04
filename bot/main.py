@@ -48,7 +48,7 @@ try:
 
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred, {
-                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
+                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
             })
         logging.info("✅ Firebase initialisé avec succès")
     else:
