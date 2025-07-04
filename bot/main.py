@@ -32,7 +32,7 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
 if not BOT_TOKEN:
     logging.error("❌ ERREUR : BOT_TOKEN ou TELEGRAM_TOKEN non défini dans les variables d'environnement !")
     exit(1)
-BOT_TOKEN = str(BOT_TOKEN)  # assure que BOT_TOKEN est bien un str
+BOT_TOKEN = str(BOT_TOKEN)
 PORT = int(os.environ.get("PORT", 8080))
 WEBHOOK_PATH = "webhook"
 WEBHOOK_URL = "https://enco-prestarail-bot.railway.app/webhook"
@@ -44,7 +44,8 @@ try:
         if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
             cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
         else:
-            cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
+            cred_file = "firebase_credentials.json" if os.path.exists("firebase_credentials.json") else "serviceAccountKey.json"
+            cred = credentials.Certificate(cred_file)
 
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred, {
@@ -56,7 +57,6 @@ try:
 except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
     logging.error(f"❌ Erreur Firebase credentials: {e}")
     logging.warning("🔄 Mode temporaire activé - Bot fonctionnera sans Firebase")
-    # Désactiver Firebase pour ce run
     os.environ['ENCO_USE_FIRESTORE'] = '0'
 
 API_URL = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api")
@@ -110,7 +110,6 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
-# Point 1 & 2 : Handler webhook personnalisé avec logs et protection
 @app.route('/', methods=['GET', 'HEAD'])
 def index():
     return 'OK', 200
@@ -118,34 +117,27 @@ def index():
 @app.route(f'/{WEBHOOK_PATH}', methods=['POST'])
 def webhook_handler():
     try:
-        # Récupérer le payload JSON
         data = request.get_json(force=True)
-        
-        # Point 1 : Log du payload reçu
         logging.info(f"🔍 PAYLOAD reçu sur /webhook: {json.dumps(data, indent=2)}")
-        
-        # Point 2 : Vérification que c'est un vrai update Telegram
+
         if not isinstance(data, dict):
             logging.warning("❌ Payload reçu n'est pas un dictionnaire JSON")
             return "Invalid JSON format", 400
-            
+
         if "update_id" not in data:
             logging.warning("❌ Payload sans update_id reçu, ignoré (pas un update Telegram)")
             return "Not a Telegram update", 400
-            
-        # Point 3 : Vérification du format attendu
+
         required_fields = ["update_id"]
         for field in required_fields:
             if field not in data:
                 logging.warning(f"❌ Champ requis '{field}' manquant dans le payload")
                 return f"Missing required field: {field}", 400
-        
-        # Point 4 : Traitement sécurisé de l'update
+
         try:
             update = Update.de_json(data, bot)
             logging.info(f"✅ Update Telegram valide reçu (ID: {update.update_id})")
-            
-            # Traiter l'update avec l'application de manière asynchrone
+
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -153,20 +145,19 @@ def webhook_handler():
                 loop.run_until_complete(application.process_update(update))
             finally:
                 loop.close()
-            
+
             return "OK", 200
-            
+
         except Exception as e:
             logging.error(f"❌ Erreur lors du traitement de l'update: {e}")
             return "Error processing update", 500
-            
+
     except Exception as e:
         logging.error(f"❌ Erreur générale dans webhook_handler: {e}")
         return "Internal server error", 500
 
 def main():
     global application
-    # BOT_TOKEN est déjà vérifié plus haut, donc on peut forcer le type
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
     application.add_error_handler(error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
@@ -185,16 +176,15 @@ def main():
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
     application.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
-    
+
     logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram sur le port {PORT} !")
     logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")
     logging.info("VERSION DEBUG 2025-07-04 - WEBHOOK SECURISE")
-    
-    # Démarrer Flask avec le handler personnalisé
+
     app.run(host="0.0.0.0", port=PORT, debug=False)
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        logging.error(f"❌ ERREUR FATALE : {e}") 
+        logging.error(f"❌ ERREUR FATALE : {e}")
