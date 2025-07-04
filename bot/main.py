@@ -5,7 +5,7 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from handlers.menu import get_menu_handlers, menu_principal, handle_menu
+from handlers.menu import menu_principal, handle_menu
 from handlers.prise_de_poste import get_handler as prise_handler
 from handlers.fin_de_poste import get_handler as fin_handler
 from handlers.checklist import get_checklist_handler
@@ -13,7 +13,7 @@ from handlers.anomalie import get_anomalie_handler
 from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
 from handlers.urgence import get_urgence_handler
-from handlers.portail import portail_sncf, portail_callback
+from handlers.portail import portail_callback
 from handlers.photo import handle_photo, handle_voice
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Bot, Update
@@ -79,6 +79,11 @@ async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text("Rappel envoyé à tous les opérateurs inscrits !")
 
+async def test_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler de test simple"""
+    if update.message:
+        await update.message.reply_text("✅ Test réussi ! Le bot fonctionne !")
+
 def schedule_reminders():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_daily_reminder, 'cron', hour=19, minute=0)
@@ -127,6 +132,9 @@ def main():
     
     # Ajouter le handler de logging en premier
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
+    
+    # Ajouter un handler de test
+    application.add_handler(CommandHandler("test", test_handler))
     
     # Ajouter les handlers de commandes
     application.add_handler(CommandHandler("start", menu_principal))
