@@ -1,6 +1,6 @@
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
-from handlers.prise_de_poste import start_prise
+from handlers.prise_de_poste import start_prise_wizard
 from handlers.fin_de_poste import start_fin
 from handlers.checklist import start_checklist
 from handlers.anomalie import start_anomalie_wizard
@@ -46,7 +46,7 @@ async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "📌 Prise de poste":
-        await start_prise(update, context)
+        await start_prise_wizard(update, context)
     elif text == "📷 Envoyer une photo":
         await start_photo(update, context)
     elif text == "📄 Bon d'attachement":
@@ -233,7 +233,7 @@ async def apitest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def get_menu_handlers():
     return [
-        MessageHandler(filters.Regex("^Partager ma position$"), start_prise),
+        MessageHandler(filters.Regex("^Partager ma position$"), start_prise_wizard),
         MessageHandler(filters.Regex("^Fin de poste$"), start_fin),
         MessageHandler(filters.Regex("^Checklist sécurité$"), start_checklist),
         MessageHandler(filters.Regex("^Mise hors voie urgente$"), hors_voie),

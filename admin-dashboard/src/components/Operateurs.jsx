@@ -28,6 +28,17 @@ const FicheInfos = ({ operateur, prises }) => (
     <b>Poste :</b> {operateur.poste || '—'}<br/>
     <b>Chantier :</b> {operateur.chantier || '—'}<br/>
     <b>Dernière prise :</b> {prises[0] ? new Date(prises[0].heure).toLocaleString('fr-FR') : '—'}<br/>
+    {/* Affichage checklist */}
+    {prises[0] && prises[0].checklistEffectuee && (
+      <div style={{marginTop:8, background:'#e8f5e9', padding:8, borderRadius:6}}>
+        <b>✅ Checklist effectuée</b>
+        <ul style={{margin:'6px 0 0 0', paddingLeft:18}}>
+          {prises[0].checklist && Object.entries(prises[0].checklist).map(([q, a], idx) => (
+            <li key={idx}><b>{q}</b> : {a}</li>
+          ))}
+        </ul>
+      </div>
+    )}
   </div>
 );
 const FichePhotos = ({ photos }) => (
@@ -169,8 +180,8 @@ const Operateurs = () => {
 
     setLoadingFiche(true);
     
-    // Abonnement aux prises de poste de l'opérateur
-    const qPrises = query(collection(db, 'prises_poste'), where('operatorId', '==', selected.operatorId));
+    // Abonnement aux prises de poste de l'opérateur (dans positions_operateurs avec type="prise_de_poste")
+    const qPrises = query(collection(db, 'positions_operateurs'), where('operatorId', '==', selected.operatorId), where('type', '==', 'prise_de_poste'));
     const unsubPrises = onSnapshot(qPrises, (prisesSnap) => {
       const prisesData = prisesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setPrises(prisesData);
@@ -193,16 +204,17 @@ const Operateurs = () => {
       updateHistorique(prises, photosData, bons, anomalies, urgences, maintenance);
     });
 
-    // Abonnement aux bons d'attachement de l'opérateur
-    const qBons = query(collection(db, 'bons_attachement'), where('operatorId', '==', selected.operatorId));
-    const unsubBons = onSnapshot(qBons, (bonsSnap) => {
-      const bonsData = bonsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      setBons(bonsData);
-      
-      // Mettre à jour les stats et l'historique
-      updateStats(prises, photos, bonsData, anomalies, urgences, maintenance);
-      updateHistorique(prises, photos, bonsData, anomalies, urgences, maintenance);
-    });
+    // Abonnement aux bons d'attachement de l'opérateur (pas encore implémenté dans le bot)
+    // const qBons = query(collection(db, 'bons_attachement'), where('operatorId', '==', selected.operatorId));
+    // const unsubBons = onSnapshot(qBons, (bonsSnap) => {
+    //   const bonsData = bonsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    //   setBons(bonsData);
+    //   
+    //   // Mettre à jour les stats et l'historique
+    //   updateStats(prises, photos, bonsData, anomalies, urgences, maintenance);
+    //   updateHistorique(prises, photos, bonsData, anomalies, urgences, maintenance);
+    // });
+    const unsubBons = () => {}; // Placeholder pour les bons (pas encore implémenté)
 
     // Abonnement aux anomalies de l'opérateur
     const qAnomalies = query(collection(db, 'anomalies'), where('operatorId', '==', selected.operatorId));
@@ -226,16 +238,17 @@ const Operateurs = () => {
       updateHistorique(prises, photos, bons, anomalies, urgencesData, maintenance);
     });
 
-    // Abonnement aux incidents de maintenance de l'opérateur
-    const qMaintenance = query(collection(db, 'maintenance_issues'), where('operatorId', '==', selected.operatorId));
-    const unsubMaintenance = onSnapshot(qMaintenance, (maintenanceSnap) => {
-      const maintenanceData = maintenanceSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      setMaintenance(maintenanceData);
-      
-      // Mettre à jour les stats et l'historique
-      updateStats(prises, photos, bons, anomalies, urgences, maintenanceData);
-      updateHistorique(prises, photos, bons, anomalies, urgences, maintenanceData);
-    });
+    // Abonnement aux incidents de maintenance de l'opérateur (pas encore implémenté dans le bot)
+    // const qMaintenance = query(collection(db, 'maintenance_issues'), where('operatorId', '==', selected.operatorId));
+    // const unsubMaintenance = onSnapshot(qMaintenance, (maintenanceSnap) => {
+    //   const maintenanceData = maintenanceSnap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    //   setMaintenance(maintenanceData);
+    //   
+    //   // Mettre à jour les stats et l'historique
+    //   updateStats(prises, photos, bons, anomalies, urgences, maintenanceData);
+    //   updateHistorique(prises, photos, bons, anomalies, urgences, maintenanceData);
+    // });
+    const unsubMaintenance = () => {}; // Placeholder pour la maintenance (pas encore implémenté)
 
     // Nettoyer tous les abonnements quand l'opérateur change ou le composant se démonte
     return () => {

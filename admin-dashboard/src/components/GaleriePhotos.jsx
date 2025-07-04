@@ -28,12 +28,12 @@ const GaleriePhotos = () => {
 
   useEffect(() => {
     const unsubPhotos = onSnapshot(collection(db, 'photos'), snap => setData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    const unsubQr = onSnapshot(collection(db, 'scans_qr'), snap => setQrData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
-    const unsubPrises = onSnapshot(collection(db, 'prises_poste'), snap => setPrises(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+    // const unsubQr = onSnapshot(collection(db, 'scans_qr'), snap => setQrData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })))); // Pas encore implémenté dans le bot
+    // const unsubPrises = onSnapshot(collection(db, 'prises_poste'), snap => setPrises(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })))); // Prises dans positions_operateurs
     return () => {
       unsubPhotos();
-      unsubQr();
-      unsubPrises();
+      // unsubQr();
+      // unsubPrises();
     };
   }, []);
 

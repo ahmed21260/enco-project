@@ -8,6 +8,9 @@ import StatsCharts from './StatsCharts';
 import TimelineActions from './TimelineActions';
 import Operateurs from './Operateurs';
 import BonsAttachement from './BonsAttachement';
+import OutilsFerroviaires from './OutilsFerroviaires';
+import Planning from './Planning';
+import ScoringDashboard from './ScoringDashboard';
 import { realtimeDb } from '../firebaseRealtime';
 import { ref, onValue } from 'firebase/database';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -40,6 +43,30 @@ const createOperatorIcon = (type) => {
   });
 };
 
+// Icône pour les alertes
+const createAlertIcon = (type) => {
+  const color = type === 'urgence' ? '#dc3545' : '#ffc107';
+  const symbol = type === 'urgence' ? '🚨' : '⚠️';
+  return L.divIcon({
+    className: 'alert-marker',
+    html: `<div style="
+      background-color: ${color};
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      animation: pulse 1s infinite;
+    ">${symbol}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+};
+
 const Dashboard = () => {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +83,7 @@ const Dashboard = () => {
   });
   const [selectedAction, setSelectedAction] = useState(null);
   const [alertesUrgence, setAlertesUrgence] = useState([]);
+  const [alertes, setAlertes] = useState([]);
 
   // Centre de la carte (France)
   const defaultCenter = [46.603354, 1.888334];
@@ -72,12 +100,29 @@ const Dashboard = () => {
     return () => unsub();
   }, []);
 
+  // Écouter les alertes et urgences
+  useEffect(() => {
+    const unsubAlertes = onSnapshot(collection(db, 'alertes'), (snap) => {
+      setAlertes(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    
+    const unsubUrgences = onSnapshot(collection(db, 'urgences'), (snap) => {
+      setAlertesUrgence(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    
+    return () => {
+      unsubAlertes();
+      unsubUrgences();
+    };
+  }, []);
+
   const renderCarte = () => (
     <div className="carte-section">
       <div className="carte-header">
         <h2>🗺️ Carte des Opérateurs ENCO</h2>
         <div className="carte-controls">
-          <span className="operateurs-count">👥 {positions.length} opérateur(s)</span>
+          <span className="operateurs-count">👥 {operateursActifs.length} opérateur(s) en poste</span>
+          <span className="total-count">📊 {positions.length} total</span>
         </div>
       </div>
       
@@ -99,16 +144,138 @@ const Dashboard = () => {
           >
             <Popup>
               <div className="popup-content">
-                <h3>👤 {pos.nom}</h3>
+                <h3>👤 {pos.nom || pos.operateur_id}</h3>
                 <p><strong>ID:</strong> {pos.operateur_id}</p>
                 <p><strong>Statut:</strong> {pos.type === 'prise_de_poste' ? '🟢 En poste' : '🔴 Fin de poste'}</p>
                 <p><strong>Heure:</strong> {new Date(pos.timestamp).toLocaleString('fr-FR')}</p>
                 <p><strong>Position:</strong> {pos.latitude.toFixed(4)}, {pos.longitude.toFixed(4)}</p>
+                {pos.description && (
+                  <p><strong>Action:</strong> {pos.description}</p>
+                )}
+                {pos.photoUrl && (
+                  <div style={{marginTop: 10}}>
+                    <img src={pos.photoUrl} alt="Photo opérateur" style={{maxWidth: 200, borderRadius: 8}} />
+                  </div>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        
+        {/* Marqueurs pour les alertes */}
+        {alertes.map((alerte, index) => (
+          <Marker
+            key={`alerte-${alerte.id}-${index}`}
+            position={[alerte.latitude, alerte.longitude]}
+            icon={createAlertIcon('alerte')}
+          >
+            <Popup>
+              <div className="popup-content">
+                <h3>⚠️ Alerte</h3>
+                <p><strong>Opérateur:</strong> {alerte.operateur_nom || alerte.operateur_id}</p>
+                <p><strong>Type:</strong> {alerte.type || 'Anomalie'}</p>
+                <p><strong>Description:</strong> {alerte.description}</p>
+                <p><strong>Heure:</strong> {new Date(alerte.timestamp).toLocaleString('fr-FR')}</p>
+                {alerte.photoUrl && (
+                  <div style={{marginTop: 10}}>
+                    <img src={alerte.photoUrl} alt="Photo alerte" style={{maxWidth: 200, borderRadius: 8}} />
+                  </div>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        
+        {/* Marqueurs pour les urgences */}
+        {alertesUrgence.map((urgence, index) => (
+          <Marker
+            key={`urgence-${urgence.id}-${index}`}
+            position={[urgence.latitude, urgence.longitude]}
+            icon={createAlertIcon('urgence')}
+          >
+            <Popup>
+              <div className="popup-content">
+                <h3>🚨 Urgence</h3>
+                <p><strong>Opérateur:</strong> {urgence.operateur_nom || urgence.operateur_id}</p>
+                <p><strong>Type:</strong> {urgence.type || 'Urgence'}</p>
+                <p><strong>Description:</strong> {urgence.description}</p>
+                <p><strong>Heure:</strong> {new Date(urgence.timestamp).toLocaleString('fr-FR')}</p>
+                {urgence.photoUrl && (
+                  <div style={{marginTop: 10}}>
+                    <img src={urgence.photoUrl} alt="Photo urgence" style={{maxWidth: 200, borderRadius: 8}} />
+                  </div>
+                )}
               </div>
             </Popup>
           </Marker>
         ))}
       </MapContainer>
+      
+      {/* Légende de la carte */}
+      <div className="map-legend" style={{
+        position: 'absolute',
+        bottom: 20,
+        left: 20,
+        background: 'white',
+        padding: '15px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        zIndex: 1000
+      }}>
+        <h4 style={{margin: '0 0 10px 0', fontSize: '14px'}}>Légende</h4>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: '#28a745',
+            border: '2px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+          }}></div>
+          <span style={{fontSize: '12px'}}>En poste</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: '#dc3545',
+            border: '2px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+          }}></div>
+          <span style={{fontSize: '12px'}}>Fin de poste</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: '#ffc107',
+            border: '2px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '8px'
+          }}>⚠️</div>
+          <span style={{fontSize: '12px'}}>Alerte</span>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <div style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: '#dc3545',
+            border: '2px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '8px'
+          }}>🚨</div>
+          <span style={{fontSize: '12px'}}>Urgence</span>
+        </div>
+      </div>
     </div>
   );
 
@@ -219,6 +386,9 @@ const Dashboard = () => {
       <StatsCharts />
       <h3 style={{marginTop:'2rem'}}>Dernières actions</h3>
       <TimelineActions />
+      <div style={{marginTop:'3rem'}}>
+        <ScoringDashboard />
+      </div>
     </div>
   );
 
@@ -267,6 +437,19 @@ const Dashboard = () => {
           >
             📄 Bons d'attachement
           </button>
+          <button 
+            className={`nav-btn ${activeTab === 'outils' ? 'active' : ''}`}
+            onClick={() => setActiveTab('outils')}
+          >
+            🗺️ Outils ferroviaires
+          </button>
+          <button 
+            className={`nav-btn ${activeTab === 'planning' ? 'active' : ''}`}
+            onClick={() => setActiveTab('planning')}
+          >
+            🗓️ Planning
+          </button>
+
         </nav>
       </div>
 
@@ -275,7 +458,10 @@ const Dashboard = () => {
           <h2>{activeTab === 'carte' ? 'Carte des Opérateurs' : 
                activeTab === 'historique' ? 'Historique' :
                activeTab === 'documents' ? 'Documents' :
-               activeTab === 'operateurs' ? 'Opérateurs' : 'Bons d\'attachement'}</h2>
+               activeTab === 'operateurs' ? 'Opérateurs' : 
+               activeTab === 'bons' ? 'Bons d\'attachement' :
+               activeTab === 'outils' ? 'Outils ferroviaires' :
+               activeTab === 'planning' ? 'Planning' : 'Dashboard'}</h2>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span className="status">🟢 Système opérationnel</span>
             {/* Bouton utilisateur admin */}
@@ -307,6 +493,8 @@ const Dashboard = () => {
               {activeTab === 'stats' && renderStats()}
               {activeTab === 'operateurs' && <Operateurs />}
               {activeTab === 'bons' && <BonsAttachement />}
+              {activeTab === 'outils' && <OutilsFerroviaires />}
+              {activeTab === 'planning' && <Planning />}
             </>
           )}
         </main>

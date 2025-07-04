@@ -35,7 +35,8 @@ const Carte = () => {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [incidents, setIncidents] = useState([]);
+  const [urgences, setUrgences] = useState([]);
+  const [anomalies, setAnomalies] = useState([]);
 
   // Centre de la carte (France)
   const defaultCenter = [46.603354, 1.888334];
@@ -62,15 +63,24 @@ const Carte = () => {
         setPositions(prev => [...prev, ...data]);
       }
     );
-    // Ajout incidents non résolus
-    const q = query(collection(db, 'incidents'), where('handled', '==', false));
-    const unsubscribeIncidents = onSnapshot(q, (snapshot) => {
-      setIncidents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    
+    // Urgences non résolues
+    const qUrgences = query(collection(db, 'urgences'), where('handled', '==', false));
+    const unsubscribeUrgences = onSnapshot(qUrgences, (snapshot) => {
+      setUrgences(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
+    
+    // Anomalies non résolues
+    const qAnomalies = query(collection(db, 'anomalies'), where('handled', '==', false));
+    const unsubscribeAnomalies = onSnapshot(qAnomalies, (snapshot) => {
+      setAnomalies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    
     return () => {
       unsubscribePositions();
       unsubscribePositionsLog();
-      unsubscribeIncidents();
+      unsubscribeUrgences();
+      unsubscribeAnomalies();
     };
   }, []);
 
@@ -90,8 +100,12 @@ const Carte = () => {
     );
   }
 
-  const handleResolveIncident = async (incidentId) => {
-    await db.collection('incidents').doc(incidentId).update({ handled: true });
+  const handleResolveUrgence = async (urgenceId) => {
+    await db.collection('urgences').doc(urgenceId).update({ handled: true });
+  };
+
+  const handleResolveAnomalie = async (anomalieId) => {
+    await db.collection('anomalies').doc(anomalieId).update({ handled: true });
   };
 
   return (
@@ -100,6 +114,8 @@ const Carte = () => {
         <h2>🗺️ Carte des Opérateurs ENCO</h2>
         <div className="stats">
           <span>👥 {positions.length} opérateur(s) en ligne</span>
+          <span style={{marginLeft: '20px', color: '#e00'}}>🚨 {urgences.length} urgence(s)</span>
+          <span style={{marginLeft: '20px', color: '#f90'}}>🔧 {anomalies.length} anomalie(s)</span>
         </div>
       </div>
       
@@ -126,26 +142,106 @@ const Carte = () => {
                 <p><strong>Type:</strong> {pos.type === 'prise_de_poste' ? '🟢 Prise de poste' : '🔴 Fin de poste'}</p>
                 <p><strong>Heure:</strong> {new Date(pos.timestamp).toLocaleString('fr-FR')}</p>
                 <p><strong>Position:</strong> {pos.latitude.toFixed(4)}, {pos.longitude.toFixed(4)}</p>
+                {pos.checklistEffectuee && (
+                  <p style={{color: '#28a745', fontWeight: 'bold'}}>✅ Checklist effectuée</p>
+                )}
               </div>
             </Popup>
           </Marker>
         ))}
 
-        {incidents.map((incident) => (
+        {/* Urgences - Ping rouge */}
+        {urgences.map((urgence) => (
           <Marker
-            key={`incident-${incident.id}`}
-            position={[incident.position.lat, incident.position.lng]}
+            key={`urgence-${urgence.id}`}
+            position={[urgence.latitude, urgence.longitude]}
             icon={L.divIcon({
-              className: 'incident-marker',
-              html: `<div style="background:#e00;width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px #e005;display:flex;align-items:center;justify-content:center;font-size:18px;">❗</div>`
+              className: 'urgence-marker',
+              html: `<div style="
+                background:#e00;
+                width:32px;
+                height:32px;
+                border-radius:50%;
+                border:4px solid #fff;
+                box-shadow:0 4px 12px #e005;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-size:20px;
+                animation: pulse 2s infinite;
+              ">🚨</div>`
             })}
           >
             <Popup>
-              <div style={{color:'#e00',fontWeight:'bold'}}>🆘 Urgence</div>
-              <div><b>Opérateur :</b> {incident.operateur_nom || incident.operateur_id}</div>
-              <div><b>Type :</b> {incident.type}</div>
-              <div><b>Heure :</b> {new Date(incident.heure).toLocaleString('fr-FR')}</div>
-              <div><b>Résoudre :</b> <button onClick={() => handleResolveIncident(incident.id)}>Marquer comme résolu</button></div>
+              <div style={{color:'#e00',fontWeight:'bold',fontSize:'16px'}}>🚨 URGENCE CRITIQUE</div>
+              <div><b>Opérateur :</b> {urgence.nom}</div>
+              <div><b>Type :</b> {urgence.type}</div>
+              <div><b>Description :</b> {urgence.description || 'Aucune'}</div>
+              <div><b>Heure :</b> {new Date(urgence.timestamp).toLocaleString('fr-FR')}</div>
+              <div><b>Position :</b> {urgence.latitude.toFixed(4)}, {urgence.longitude.toFixed(4)}</div>
+              <div style={{marginTop:'8px'}}>
+                <button 
+                  onClick={() => handleResolveUrgence(urgence.id)}
+                  style={{
+                    background:'#e00',
+                    color:'#fff',
+                    border:'none',
+                    padding:'4px 8px',
+                    borderRadius:'4px',
+                    cursor:'pointer'
+                  }}
+                >
+                  Marquer comme résolu
+                </button>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Anomalies - Ping orange */}
+        {anomalies.map((anomalie) => (
+          <Marker
+            key={`anomalie-${anomalie.id}`}
+            position={[anomalie.latitude, anomalie.longitude]}
+            icon={L.divIcon({
+              className: 'anomalie-marker',
+              html: `<div style="
+                background:#f90;
+                width:28px;
+                height:28px;
+                border-radius:50%;
+                border:3px solid #fff;
+                box-shadow:0 3px 10px #f905;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-size:16px;
+              ">🔧</div>`
+            })}
+          >
+            <Popup>
+              <div style={{color:'#f90',fontWeight:'bold',fontSize:'14px'}}>🔧 ANOMALIE</div>
+              <div><b>Opérateur :</b> {anomalie.nom}</div>
+              <div><b>Machine :</b> {anomalie.machine || 'Non spécifiée'}</div>
+              <div><b>Type :</b> {anomalie.type_anomalie || 'Non spécifié'}</div>
+              <div><b>Anomalie :</b> {anomalie.anomalie_specifique || 'Non spécifiée'}</div>
+              <div><b>Description :</b> {anomalie.description || 'Aucune'}</div>
+              <div><b>Heure :</b> {new Date(anomalie.timestamp).toLocaleString('fr-FR')}</div>
+              <div style={{marginTop:'8px'}}>
+                <button 
+                  onClick={() => handleResolveAnomalie(anomalie.id)}
+                  style={{
+                    background:'#f90',
+                    color:'#fff',
+                    border:'none',
+                    padding:'4px 8px',
+                    borderRadius:'4px',
+                    cursor:'pointer'
+                  }}
+                >
+                  Marquer comme résolu
+                </button>
+              </div>
             </Popup>
           </Marker>
         ))}
