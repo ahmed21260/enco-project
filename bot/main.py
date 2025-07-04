@@ -112,7 +112,11 @@ async def error_handler(update, context):
 
 @app.route('/', methods=['GET', 'HEAD'])
 def index():
-    return 'OK', 200
+    return 'ENCO Bot is running', 200
+
+@app.route('/health', methods=['GET'])
+def health():
+    return {'status': 'healthy', 'service': 'enco-bot'}, 200
 
 @app.route(f'/{WEBHOOK_PATH}', methods=['POST'])
 def webhook_handler():
@@ -123,6 +127,16 @@ def webhook_handler():
         if not isinstance(data, dict):
             logging.warning("❌ Payload reçu n'est pas un dictionnaire JSON")
             return "Invalid JSON format", 400
+
+        # Ignorer les notifications de déploiement Railway
+        if "type" in data and data["type"] == "DEPLOY":
+            logging.info("🚂 Notification de déploiement Railway reçue, ignorée")
+            return "Railway deployment notification ignored", 200
+
+        # Ignorer les autres types de notifications Railway
+        if "service" in data or "project" in data:
+            logging.info("🚂 Notification Railway reçue, ignorée")
+            return "Railway notification ignored", 200
 
         if "update_id" not in data:
             logging.warning("❌ Payload sans update_id reçu, ignoré (pas un update Telegram)")
