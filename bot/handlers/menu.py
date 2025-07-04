@@ -12,7 +12,7 @@ from utils.firestore import db
 import datetime
 import io
 from PIL import Image
-from pyzbar.pyzbar import decode as decode_qr
+# SUPPRESSION: from pyzbar.pyzbar import decode as decode_qr
 import os
 from handlers.photo import start_photo
 import requests
@@ -21,7 +21,7 @@ MENU_KEYBOARD = [
     ["📌 Prise de poste", "📷 Envoyer une photo"],
     ["📄 Envoyer bon signé", "🛑 URGENCE / INCIDENT"],
     ["🚧 Portail SNCF / Plan accès", "🔧 Rapport technique machine"],
-    ["🗓️ Planning", "📦 Scan Matériel / Retrait PL (à venir)"]
+    ["🗓️ Planning"]  # SUPPRESSION: QR code/Scan Matériel
 ]
 
 async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -33,7 +33,7 @@ async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🖼️ Envoyer une photo : signale un état ou une anomalie\n"
         "🛑 Urgence : déclare un incident immédiat\n"
         "📄 Bon signé : envoie un bon d'attachement\n"
-        "🗺️ Planning, QR code, etc.\n\n"
+        "🗺️ Planning, etc.\n\n"  # SUPPRESSION: QR code
         "Utilise les boutons ci-dessous pour naviguer, ou tape /aide pour plus d'infos.",
         reply_markup=reply_markup
     )
@@ -60,9 +60,6 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await menu_principal(update, context)
     elif text == "🗓️ Planning":
         await planning_handler(update, context)
-        await menu_principal(update, context)
-    elif text == "📦 Scan Matériel / Retrait PL (à venir)":
-        await scan_qr_start(update, context)
         await menu_principal(update, context)
     else:
         await menu_principal(update, context)
@@ -91,7 +88,6 @@ async def aide(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• *Urgence* : Déclare un incident immédiat, partage ta position.\n"
         "• *Bon signé* : Envoie un bon d'attachement lié à ta prise.\n"
         "• *Planning* : Récapitulatif de ta journée.\n"
-        "• *Scan QR code* : Associe un matériel à ta prise.\n\n"
         "Utilise toujours les boutons, pas de commandes texte !",
         parse_mode="Markdown"
     )
@@ -148,80 +144,7 @@ async def planning_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"\n🚨 Alertes : {len(alertes)}"
     await update.message.reply_text(msg)
 
-async def scan_qr_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📦 Envoie une photo du QR code à scanner.")
-    context.user_data['awaiting_qr'] = True
-
-async def scan_qr_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.user_data.get('awaiting_qr'):
-        return
-    user = update.effective_user
-    photo = update.message.photo[-1]
-    file = await context.bot.get_file(photo.file_id)
-    img_bytes = await file.download_as_bytearray()
-    img = Image.open(io.BytesIO(img_bytes))
-    qr_results = decode_qr(img)
-    if not qr_results:
-        await update.message.reply_text("❌ Aucun QR code détecté. Réessaie avec une photo plus nette.")
-        return
-    qr_content = qr_results[0].data.decode('utf-8')
-    # Enregistrement Firestore
-    scan_doc = {
-        'operateur_id': str(user.id),
-        'nom': getattr(user, 'full_name', ''),
-        'timestamp': datetime.datetime.now().isoformat(),
-        'qr_content': qr_content,
-        # 'chantier': ... (à compléter si dispo dans le contexte)
-    }
-    db.collection('scans_qr').add(scan_doc)
-    await update.message.reply_text(f"✅ QR code scanné et enregistré : {qr_content}")
-    context.user_data['awaiting_qr'] = False
-
-async def prise_poste_and_scan_qr(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Appelle le handler de prise de poste existant
-    await start_prise(update, context)
-    # Après la prise de poste, propose le scan QR
-    await update.message.reply_text("Veux-tu scanner le QR code de la machine utilisée ?", reply_markup=ReplyKeyboardMarkup([["Oui", "Non"]], one_time_keyboard=True))
-    context.user_data['awaiting_qr_after_prise'] = True
-
-async def scan_qr_photo_linked(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.user_data.get('awaiting_qr_after_prise'):
-        return
-    user = update.effective_user
-    # Récupérer la prise de poste du jour
-    today = datetime.datetime.now().date().isoformat()
-    prise = None
-    prise_id = None
-    chantier = None
-    for doc in db.collection('prises_poste').where('operateur_id', '==', str(user.id)).where('heure', '>=', today).stream():
-        prise = doc.to_dict()
-        prise_id = doc.id
-        chantier = prise.get('chantier', '')
-        break
-    if not prise_id:
-        await update.message.reply_text("❗ Impossible de lier le scan à une prise de poste du jour.")
-        context.user_data['awaiting_qr_after_prise'] = False
-        return
-    photo = update.message.photo[-1]
-    file = await context.bot.get_file(photo.file_id)
-    img_bytes = await file.download_as_bytearray()
-    img = Image.open(io.BytesIO(img_bytes))
-    qr_results = decode_qr(img)
-    if not qr_results:
-        await update.message.reply_text("❌ Aucun QR code détecté. Réessaie avec une photo plus nette.")
-        return
-    qr_content = qr_results[0].data.decode('utf-8')
-    scan_doc = {
-        'operateur_id': str(user.id),
-        'nom': getattr(user, 'full_name', ''),
-        'timestamp': datetime.datetime.now().isoformat(),
-        'qr_content': qr_content,
-        'chantier': chantier,
-        'prise_poste_id': prise_id
-    }
-    db.collection('scans_qr').add(scan_doc)
-    await update.message.reply_text(f"✅ QR code scanné et lié à ta prise de poste du jour : {qr_content}")
-    context.user_data['awaiting_qr_after_prise'] = False
+# SUPPRESSION: async def scan_qr_start, scan_qr_photo, scan_qr_photo_linked, prise_poste_and_scan_qr
 
 async def declare_panne_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     types = [
@@ -323,10 +246,10 @@ def get_menu_handlers():
         MessageHandler(filters.Regex("^Fiches techniques$"), consulter_documents),
         MessageHandler(filters.Regex("^Historique$"), afficher_historique),
         MessageHandler(filters.Regex("^Paramètres$"), aide),
-        MessageHandler(filters.Regex("^📦 Scanner QR code$"), scan_qr_start),
-        MessageHandler(filters.PHOTO, scan_qr_photo),
-        MessageHandler(filters.Regex("^Prise de poste$"), prise_poste_and_scan_qr),
-        MessageHandler(filters.PHOTO, scan_qr_photo_linked),
+        # SUPPRESSION: MessageHandler(filters.Regex("^📦 Scanner QR code$"), scan_qr_start),
+        # SUPPRESSION: MessageHandler(filters.PHOTO, scan_qr_photo),
+        # SUPPRESSION: MessageHandler(filters.Regex("^Prise de poste$"), prise_poste_and_scan_qr),
+        # SUPPRESSION: MessageHandler(filters.PHOTO, scan_qr_photo_linked),
         MessageHandler(filters.Regex("^🛠️ Déclarer une panne machine$"), declare_panne_start),
         MessageHandler(filters.TEXT & ~filters.COMMAND, declare_panne_type),
         MessageHandler(filters.PHOTO, declare_panne_photo),
