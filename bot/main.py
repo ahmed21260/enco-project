@@ -7,15 +7,15 @@ load_dotenv()
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from handlers.menu import menu_principal, handle_menu
 from handlers.prise_de_poste import get_prise_wizard_handler as prise_handler
-from handlers.fin_de_poste import get_handler as fin_handler
+from handlers.fin_de_poste import get_fin_wizard_handler as fin_handler
 from handlers.checklist import get_checklist_handler
-from handlers.anomalie import get_anomalie_handler
+from handlers.anomalie import get_anomalie_wizard_handler as get_anomalie_handler
 from handlers.bons_attachement import get_bon_wizard_handler
 from handlers.rapport_technique import get_rapport_wizard_handler
 from handlers.outils_ferroviaires import get_outils_ferroviaires_handler
 from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
-from handlers.urgence import get_urgence_handler
+from handlers.urgence import get_urgence_wizard_handler as get_urgence_handler
 from handlers.portail import portail_callback
 from handlers.photo import handle_photo, handle_voice
 from handlers.planning import get_planning_wizard_handler
@@ -62,7 +62,7 @@ except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
     logging.warning("🔄 Mode temporaire activé - Bot fonctionnera sans Firebase")
     os.environ['ENCO_USE_FIRESTORE'] = '0'
 
-API_URL = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api")
+API_URL = os.getenv("API_URL", "https://believable-motivation-production.up.railway.app/api")
 
 async def send_daily_reminder():
     operateurs = db.collection('operateurs').stream()
