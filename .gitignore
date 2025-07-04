@@ -1,29 +1,54 @@
-# Fichiers Python
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Secrets et credentials
-bot/serviceAccountKey.json
-bot/serviceAccountKey_railway.txt
-*.env
-.env*
-
-# Fichiers de log
-*.log
-
-# Fichiers temporaires
-positions_temp.json
-anomalies_temp.json
-checklists_temp.json
-
 # Node.js
 node_modules/
 
-# Autres fichiers sensibles
+# Environnements et secrets
+.env
+.env.*
+*.env
 firebase/
-*.bak
-.DS_Store
-.idea/
+bot/serviceAccountKey.json
+bot/serviceAccountKey_railway.txt
+serviceAccountKey.json
+serviceAccountKey_railway.txt
+
+# Fichiers de log
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+firebase-debug.log*
+firebase-debug.*.log*
+
+# Fichiers temporaires et caches
+positions_temp.json
+anomalies_temp.json
+checklists_temp.json
+coverage/
+.nyc_output/
+.grunt/
+.bower/
+
+# IDE et outils
 .vscode/
+.idea/
+.DS_Store
+*.bak
+
+# Autres
+*.tgz
+*.pid
+*.seed
+*.pid.lock
+bower_components/
+lib-cov/
+build/
+Release/
+
+# Railway
+railway.json
