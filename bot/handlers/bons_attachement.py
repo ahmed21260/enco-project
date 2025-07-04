@@ -127,7 +127,7 @@ def get_bon_wizard_handler():
             MessageHandler(filters.Regex("^Bon d'attachement$"), start_bon_wizard)
         ],
         states={
-            UPLOAD_DOC: [MessageHandler(filters.PHOTO | filters.DOCUMENT | filters.TEXT, receive_document)],
+            UPLOAD_DOC: [MessageHandler(filters.PHOTO | filters.Document.ALL | filters.TEXT, receive_document)],
             SAISIE_INFOS: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_infos)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_bon)],
         },
