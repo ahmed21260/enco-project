@@ -19,7 +19,7 @@ const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'enco-prestarail.firebasestorage.app'
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'enco-prestarail.appspot.com'
 });
 
 const upload = multer({ storage: multer.memoryStorage() });
