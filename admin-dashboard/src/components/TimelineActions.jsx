@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './TimelineActions.css';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import { useOperateursLive } from '../hooks/useOperateursLive';
 
 const typeToIcon = {
   'prise_de_poste': '🟢',
@@ -20,51 +21,14 @@ const typeToLabel = {
 };
 
 const TimelineActions = () => {
-  const [actions, setActions] = useState([]);
-
-  useEffect(() => {
-    const unsubPos = onSnapshot(collection(db, 'positions_operateurs'), (snap) => {
-      const pos = snap.docs.map(doc => ({ ...doc.data(), type: doc.data().type || 'prise_de_poste', _src: 'pos_operateurs' }));
-      setActions(prev => {
-        const others = prev.filter(a => a._src !== 'pos_operateurs');
-        return [...others, ...pos];
-      });
-    });
-    const unsubPosLog = onSnapshot(collection(db, 'positions_log'), (snap) => {
-      const poslog = snap.docs.map(doc => ({ ...doc.data(), type: doc.data().type || 'prise_de_poste', _src: 'pos_log' }));
-      setActions(prev => {
-        const others = prev.filter(a => a._src !== 'pos_log');
-        return [...others, ...poslog];
-      });
-    });
-    const unsubAno = onSnapshot(collection(db, 'anomalies'), (snap) => {
-      const ano = snap.docs.map(doc => ({ ...doc.data(), type: 'anomalie', _src: 'ano' }));
-      setActions(prev => {
-        const others = prev.filter(a => a._src !== 'ano');
-        return [...others, ...ano];
-      });
-    });
-    const unsubChk = onSnapshot(collection(db, 'checklists'), (snap) => {
-      const chk = snap.docs.map(doc => ({ ...doc.data(), type: 'checklist', _src: 'chk' }));
-      setActions(prev => {
-        const others = prev.filter(a => a._src !== 'chk');
-        return [...others, ...chk];
-      });
-    });
-    const unsubUrg = onSnapshot(collection(db, 'urgences'), (snap) => {
-      const urg = snap.docs.map(doc => ({ ...doc.data(), type: 'urgence', _src: 'urg' }));
-      setActions(prev => {
-        const others = prev.filter(a => a._src !== 'urg');
-        return [...others, ...urg];
-      });
-    });
-    return () => { unsubPos(); unsubPosLog(); unsubAno(); unsubChk(); unsubUrg(); };
-  }, []);
-
-  const sorted = actions
-    .filter(a => a.timestamp)
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 20);
+  const { positions, anomalies, urgences, checklists } = useOperateursLive();
+  const actions = [
+    ...positions.map(a => ({ ...a, type: a.type || 'prise_de_poste' })),
+    ...anomalies.map(a => ({ ...a, type: 'anomalie' })),
+    ...urgences.map(a => ({ ...a, type: 'urgence' })),
+    ...checklists.map(a => ({ ...a, type: 'checklist' })),
+  ];
+  const sorted = actions.filter(a => a.timestamp).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
 
   // Résumé rapide par type
   const resume = sorted.reduce((acc, a) => {

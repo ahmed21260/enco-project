@@ -106,10 +106,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info("✅ Handler /start bien exécuté !")
     await update.message.reply_text("Bienvenue sur le bot ENCO !")
 
-async def prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.info("Handler /prise exécuté !")
-    await update.message.reply_text("Commande /prise bien reçue.")
-
 def schedule_reminders():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_daily_reminder, 'cron', hour=19, minute=0)
@@ -165,7 +161,6 @@ def main():
     
     # Ajouter les handlers de commandes
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("prise", prise))
     application.add_handler(CommandHandler("test_rappel", test_rappel))
     application.add_handler(CommandHandler("docs", lambda u, c: consulter_documents(u, c) if u.effective_user.id == ADMIN_ID else u.message.reply_text("Accès réservé à l'administrateur.")))
     application.add_handler(CommandHandler("historique", lambda u, c: afficher_historique(u, c) if u.effective_user.id == ADMIN_ID else u.message.reply_text("Accès réservé à l'administrateur.")))

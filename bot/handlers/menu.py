@@ -65,19 +65,25 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_outils_ferroviaires(update, context)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    welcome_text = (
+        "👋 *Bienvenue sur ENCO, l'outil des opérateurs ferroviaires !*\n\n"
+        "Voici ce que tu peux faire :\n"
+        "• 📌 *Prendre ton poste* (déclare ta présence et ta position)\n"
+        "• 🚨 *Déclarer une urgence* (incident grave, sécurité)\n"
+        "• 🛠️ *Déclarer une anomalie* (problème technique)\n"
+        "• ✅ *Remplir une checklist* (sécurité, matériel)\n"
+        "• 📄 *Consulter les documents* (règlement, procédures)\n\n"
+        "_Tout est synchronisé en temps réel avec le dashboard ENCO._"
+    )
     keyboard = [
-        ["Envoyer une photo", "Partager ma position"],
-        ["Checklist sécurité", "Déclencher une urgence"],
-        ["Mise hors voie urgente", "Portail d'accès SNCF"],
-        ["Fiches techniques", "Aide"],
-        ["Historique", "Paramètres"]
+        ["📌 Prendre mon poste", "🚨 Déclarer une urgence"],
+        ["🛠️ Déclarer une anomalie", "✅ Remplir une checklist"],
+        ["📄 Documents", "Menu principal"]
     ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
-        "👋 *Bienvenue sur le bot ENCO !*\n\n"
-        "Utilisez le menu ci-dessous ou tapez une commande (/checklist, /aide, /docs, /historique, etc.) pour accéder aux fonctions :",
-        reply_markup=reply_markup,
-        parse_mode="Markdown"
+        welcome_text,
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     )
 
 async def aide(update: Update, context: ContextTypes.DEFAULT_TYPE):
