@@ -20,8 +20,6 @@ from utils.firestore import db
 import firebase_admin
 from firebase_admin import credentials
 import json
-from flask import Flask, request, Response
-import threading
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -35,7 +33,7 @@ if not BOT_TOKEN:
 BOT_TOKEN = str(BOT_TOKEN)
 PORT = int(os.environ.get("PORT", 8080))
 WEBHOOK_PATH = "webhook"
-WEBHOOK_URL = "https://enco-prestarail-bot.railway.app/webhook"
+WEBHOOK_URL = f"https://enco-prestarail-bot.up.railway.app/{WEBHOOK_PATH}"
 bot = Bot(token=BOT_TOKEN)
 
 # Initialisation Firebase avec gestion d'erreurs
@@ -60,9 +58,6 @@ except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
     os.environ['ENCO_USE_FIRESTORE'] = '0'
 
 API_URL = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api")
-
-# Flask app pour gérer le webhook manuellement
-app = Flask(__name__)
 
 async def send_daily_reminder():
     operateurs = db.collection('operateurs').stream()
@@ -110,68 +105,7 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
-@app.route('/', methods=['GET', 'HEAD'])
-def index():
-    return 'ENCO Bot is running', 200
-
-@app.route('/health', methods=['GET'])
-def health():
-    return {'status': 'healthy', 'service': 'enco-bot'}, 200
-
-@app.route(f'/{WEBHOOK_PATH}', methods=['POST'])
-def webhook_handler():
-    try:
-        data = request.get_json(force=True)
-        logging.info(f"🔍 PAYLOAD reçu sur /webhook: {json.dumps(data, indent=2)}")
-
-        if not isinstance(data, dict):
-            logging.warning("❌ Payload reçu n'est pas un dictionnaire JSON")
-            return "Invalid JSON format", 400
-
-        # Ignorer les notifications de déploiement Railway
-        if "type" in data and data["type"] == "DEPLOY":
-            logging.info("🚂 Notification de déploiement Railway reçue, ignorée")
-            return "Railway deployment notification ignored", 200
-
-        # Ignorer les autres types de notifications Railway
-        if "service" in data or "project" in data:
-            logging.info("🚂 Notification Railway reçue, ignorée")
-            return "Railway notification ignored", 200
-
-        if "update_id" not in data:
-            logging.warning("❌ Payload sans update_id reçu, ignoré (pas un update Telegram)")
-            return "Not a Telegram update", 400
-
-        required_fields = ["update_id"]
-        for field in required_fields:
-            if field not in data:
-                logging.warning(f"❌ Champ requis '{field}' manquant dans le payload")
-                return f"Missing required field: {field}", 400
-
-        try:
-            update = Update.de_json(data, bot)
-            logging.info(f"✅ Update Telegram valide reçu (ID: {update.update_id})")
-
-            import asyncio
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(application.process_update(update))
-            finally:
-                loop.close()
-
-            return "OK", 200
-
-        except Exception as e:
-            logging.error(f"❌ Erreur lors du traitement de l'update: {e}")
-            return "Error processing update", 500
-
-    except Exception as e:
-        logging.error(f"❌ Erreur générale dans webhook_handler: {e}")
-        return "Internal server error", 500
-
 def main():
-    global application
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
     application.add_error_handler(error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
@@ -191,14 +125,15 @@ def main():
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
     application.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
 
-    logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram sur le port {PORT} !")
+    logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram en mode webhook sur le port {PORT} !")
     logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")
-    logging.info("VERSION DEBUG 2025-07-04 - WEBHOOK SECURISE")
+    logging.info("VERSION DEBUG 2025-07-04 - WEBHOOK NATIF")
 
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url=WEBHOOK_URL
+    )
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logging.error(f"❌ ERREUR FATALE : {e}")
+    main()
