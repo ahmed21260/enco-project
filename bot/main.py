@@ -24,7 +24,7 @@ from flask import Flask, request, Response
 import threading
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG if os.getenv("ENCO_DEBUG", "0") == "1" else logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
 # Supporte BOT_TOKEN ou TELEGRAM_TOKEN
@@ -111,6 +111,10 @@ async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
 # Point 1 & 2 : Handler webhook personnalisé avec logs et protection
+@app.route('/', methods=['GET', 'HEAD'])
+def index():
+    return 'OK', 200
+
 @app.route(f'/{WEBHOOK_PATH}', methods=['POST'])
 def webhook_handler():
     try:
