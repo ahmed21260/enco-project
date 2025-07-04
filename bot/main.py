@@ -10,11 +10,15 @@ from handlers.prise_de_poste import get_handler as prise_handler
 from handlers.fin_de_poste import get_handler as fin_handler
 from handlers.checklist import get_checklist_handler
 from handlers.anomalie import get_anomalie_handler
+from handlers.bons_attachement import get_bon_wizard_handler
+from handlers.rapport_technique import get_rapport_wizard_handler
+from handlers.outils_ferroviaires import get_outils_ferroviaires_handler
 from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
 from handlers.urgence import get_urgence_handler
 from handlers.portail import portail_callback
 from handlers.photo import handle_photo, handle_voice
+from handlers.planning import get_planning_wizard_handler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Bot, Update
 from utils.firestore import db
@@ -172,6 +176,10 @@ def main():
     application.add_handler(get_checklist_handler())
     application.add_handler(get_anomalie_handler())
     application.add_handler(get_urgence_handler())
+    application.add_handler(get_bon_wizard_handler())
+    application.add_handler(get_rapport_wizard_handler())
+    application.add_handler(get_outils_ferroviaires_handler())
+    application.add_handler(get_planning_wizard_handler())
     application.add_handler(CallbackQueryHandler(portail_callback))
     
     # Ajouter les handlers de photos et voix

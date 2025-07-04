@@ -1,108 +1,153 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, MessageHandler, filters
-import os
-from utils.firestore import save_position, upload_photo_to_storage, save_urgence
-from PIL import Image
+from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
+from utils.firestore import save_urgence, db
+from datetime import datetime
 
-GEOLOC_URGENCE = 0
+TYPE, MESSAGE, GPS, CONFIRM = range(4)
 
-async def urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler pour déclencher une urgence"""
+# Types d'urgence spécifiques ferroviaires
+URGENCE_TYPES = [
+    ["🚨 Collision / Obstacle voie", "⚡ Panne électrique"],
+    ["🔧 Panne machine critique", "🏥 Blessure opérateur"],
+    ["🚧 Incident chantier", "🌊 Inondation / Intempéries"],
+    ["📡 Panne signalisation", "🔥 Incendie / Fumée"],
+    ["Autre urgence"]
+]
+
+async def start_urgence_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🚨 **URGENCE - ALERTE IMMÉDIATE**\n\n"
-        "Une urgence a été déclenchée. Votre position sera transmise à l'encadrement.\n"
-        "Envoyez votre position pour localisation :",
+        "🚨 **URGENCE FERROVIAIRE**\n\n"
+        "Sélectionne le type d'urgence :",
+        reply_markup=ReplyKeyboardMarkup(URGENCE_TYPES, one_time_keyboard=True, resize_keyboard=True)
+    )
+    return TYPE
+
+async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['urgence_type'] = update.message.text
+    
+    # Afficher les numéros d'urgence selon le type
+    numeros_urgence = get_numeros_urgence(update.message.text)
+    
+    await update.message.reply_text(
+        f"🚨 **{update.message.text}**\n\n"
+        f"Décris l'urgence ou ajoute une photo (optionnel, tape 'skip' pour passer) :\n\n"
+        f"📞 **Numéros d'urgence :**\n"
+        f"{numeros_urgence}"
+    )
+    return MESSAGE
+
+def get_numeros_urgence(type_urgence):
+    """Retourne les numéros d'urgence selon le type"""
+    base_numeros = "🚨 Sécurité SNCF : 3117\n📞 ENCO Assistance : 06 XX XX XX XX"
+    
+    if "Collision" in type_urgence or "Obstacle" in type_urgence:
+        return f"{base_numeros}\n🚨 SAMU : 15\n🚔 Police : 17"
+    elif "Blessure" in type_urgence:
+        return f"{base_numeros}\n🚨 SAMU : 15\n🏥 Médecin chantier : [numéro local]"
+    elif "Incendie" in type_urgence or "Fumée" in type_urgence:
+        return f"{base_numeros}\n🚨 Pompiers : 18\n🚨 SAMU : 15"
+    elif "Panne machine" in type_urgence:
+        return f"{base_numeros}\n🔧 Maintenance ENCO : [numéro local]"
+    else:
+        return f"{base_numeros}\n🚨 SAMU : 15\n🚔 Police : 17\n🚨 Pompiers : 18"
+
+async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text and update.message.text.lower() == 'skip':
+        context.user_data['urgence_message'] = ''
+    else:
+        context.user_data['urgence_message'] = update.message.text or ''
+    
+    await update.message.reply_text(
+        "📍 **Envoie ta localisation GPS (obligatoire)** :\n\n"
+        "Cette position sera transmise immédiatement à l'encadrement.",
         reply_markup=ReplyKeyboardMarkup(
             [[KeyboardButton("📍 Envoyer ma position", request_location=True)]],
-            one_time_keyboard=True,
-            resize_keyboard=True
-        ),
-        parse_mode="Markdown"
+            one_time_keyboard=True, resize_keyboard=True
+        )
     )
-    return GEOLOC_URGENCE
+    return GPS
 
-async def hors_voie(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler pour mise hors voie urgente"""
+async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.location:
+        await update.message.reply_text("❗ Localisation obligatoire pour signaler une urgence.")
+        return GPS
+    
+    context.user_data['gps'] = update.message.location
+    
+    # Récapitulatif avec numéros d'urgence
+    numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
+    
     await update.message.reply_text(
-        "⚠️ **MISE HORS VOIE URGENTE**\n\n"
-        "Procédure d'évacuation immédiate activée.\n"
-        "Envoyez votre position pour assistance :",
-        reply_markup=ReplyKeyboardMarkup(
-            [[KeyboardButton("📍 Envoyer ma position", request_location=True)]],
-            one_time_keyboard=True,
-            resize_keyboard=True
-        ),
-        parse_mode="Markdown"
+        f"🚨 **Récapitulatif Urgence**\n\n"
+        f"📋 Type : {context.user_data.get('urgence_type', '')}\n"
+        f"📝 Description : {context.user_data.get('urgence_message', 'Aucune')}\n"
+        f"📍 Position : {update.message.location.latitude:.4f}, {update.message.location.longitude:.4f}\n\n"
+        f"📞 **Numéros d'urgence :**\n"
+        f"{numeros_urgence}\n\n"
+        f"✅ Confirme l'envoi de l'urgence ? (oui/non)"
     )
-    return GEOLOC_URGENCE
+    return CONFIRM
 
-async def save_urgence_geoloc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Sauvegarder la position d'urgence"""
+async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text.lower() != "oui":
+        await update.message.reply_text("❌ Signalement annulé.")
+        return ConversationHandler.END
+    
     user = update.message.from_user
-    loc = update.message.location
-    urgence_type = context.user_data.get('urgence_type', 'inconnue')
-    incident_data = {
+    loc = context.user_data['gps']
+    
+    # Données pour Firestore
+    urgence_data = {
         "operateur_id": user.id,
         "operatorId": user.id,
         "nom": user.full_name,
-        "timestamp": update.message.date.isoformat(),
+        "timestamp": datetime.now().isoformat(),
+        "type": context.user_data.get('urgence_type', ''),
+        "description": context.user_data.get('urgence_message', ''),
         "latitude": loc.latitude,
         "longitude": loc.longitude,
-        "type": urgence_type,
-        "handled": False
+        "handled": False,
+        "urgence_level": "CRITIQUE",
+        "position": {
+            "lat": loc.latitude,
+            "lng": loc.longitude
+        }
     }
-    save_urgence(incident_data)
-    await update.message.reply_text("🆘 Urgence transmise ! L'encadrement est alerté.")
-    context.user_data['urgence_step'] = None
-    context.user_data['urgence_type'] = None
+    
+    # Sauvegarder dans Firestore
+    save_urgence(urgence_data)
+    
+    # Message de confirmation avec numéros d'urgence
+    numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
+    
+    await update.message.reply_text(
+        f"✅ **URGENCE ENREGISTRÉE ET TRANSMISE !**\n\n"
+        f"🚨 L'encadrement a été notifié immédiatement.\n"
+        f"📍 Ta position a été transmise.\n\n"
+        f"📞 **Numéros d'urgence :**\n"
+        f"{numeros_urgence}\n\n"
+        f"🔄 Reste en contact avec l'encadrement.",
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                ["Menu principal", "Signaler une autre urgence"],
+                ["Signaler une anomalie", "Envoyer photo en cours de mission"]
+            ], resize_keyboard=True
+        )
+    )
+    return ConversationHandler.END
 
-async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.message.from_user
-    photo = update.message.photo[-1]
-    file = await context.bot.get_file(photo.file_id)
-    local_dir = f"bot/photos/{user.id}/urgence"
-    os.makedirs(local_dir, exist_ok=True)
-    file_name = f"urgence_{user.id}_{update.message.date.strftime('%Y%m%d_%H%M%S')}.jpg"
-    file_path = f"{local_dir}/{file_name}"
-    await file.download_to_drive(file_path)
-    # Redimensionnement
-    resized_path = f"{local_dir}/resized_{file_name}"
-    try:
-        with Image.open(file_path) as img:
-            img.thumbnail((1024, 1024))
-            img.save(resized_path, "JPEG")
-    except Exception as e:
-        resized_path = file_path
-        print(f"Erreur resize: {e}")
-    # Upload Firebase Storage
-    storage_path = f"urgence/{user.id}/{file_name}"
-    public_url = upload_photo_to_storage(resized_path, storage_path)
-    # Log enrichi
-    log_entry = {
-        "operateur_id": user.id,
-        "nom": user.full_name,
-        "timestamp": update.message.date.isoformat(),
-        "photo_path": file_path,
-        "firebase_url": public_url,
-        "type": "urgence"
-    }
-    with open("bot/photos_log.jsonl", "a", encoding="utf-8") as f:
-        import json
-        f.write(json.dumps(log_entry) + "\n")
-    if public_url:
-        await update.message.reply_text("📸 Photo d'urgence reçue, redimensionnée et uploadée sur le cloud !")
-    else:
-        await update.message.reply_text("❗ Erreur upload cloud, photo d'urgence sauvegardée localement.")
-
-def get_urgence_handler():
+def get_urgence_wizard_handler():
     return ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex("^Déclencher une urgence$"), urgence),
-            MessageHandler(filters.Regex("^Mise hors voie urgente$"), hors_voie)
+            CommandHandler("urgence", start_urgence_wizard),
+            MessageHandler(filters.Regex("^URGENCE SNCF$"), start_urgence_wizard),
+            MessageHandler(filters.Regex("^🛑 URGENCE / INCIDENT$"), start_urgence_wizard)
         ],
-        states={GEOLOC_URGENCE: [MessageHandler(filters.LOCATION, save_urgence_geoloc)]},
-        fallbacks=[
-            MessageHandler(filters.PHOTO, handle_photo),
-            MessageHandler(filters.Regex("^Envoyer une photo$"), lambda u, c: u.message.reply_text("Merci d'envoyer la photo maintenant."))
-        ]
+        states={
+            TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type)],
+            MESSAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_message)],
+            GPS: [MessageHandler(filters.LOCATION, receive_gps)],
+            CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_urgence)],
+        },
+        fallbacks=[]
     ) 
