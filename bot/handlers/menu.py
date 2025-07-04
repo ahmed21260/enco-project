@@ -1,7 +1,7 @@
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from handlers.prise_de_poste import start_prise_wizard
-from handlers.fin_de_poste import start_fin
+from handlers.fin_de_poste import start_fin_wizard
 from handlers.checklist import start_checklist
 from handlers.anomalie import start_anomalie_wizard
 from handlers.bons_attachement import start_bon_wizard
@@ -59,6 +59,8 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_outils_ferroviaires(update, context)
     elif text == "🗓️ Planning":
         await start_planning_wizard(update, context)
+    elif text == "Fin de poste / Bon papier":
+        await start_fin_wizard(update, context)
     else:
         await handle_outils_ferroviaires(update, context)
 
@@ -233,8 +235,7 @@ async def apitest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def get_menu_handlers():
     return [
-        MessageHandler(filters.Regex("^Partager ma position$"), start_prise_wizard),
-        MessageHandler(filters.Regex("^Fin de poste$"), start_fin),
+        MessageHandler(filters.Regex("^Fin de poste$"), start_fin_wizard),
         MessageHandler(filters.Regex("^Checklist sécurité$"), start_checklist),
         MessageHandler(filters.Regex("^Mise hors voie urgente$"), hors_voie),
         MessageHandler(filters.Regex("^Portail d'accès SNCF$"), portail_sncf),
