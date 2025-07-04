@@ -33,7 +33,7 @@ if not BOT_TOKEN:
     exit(1)
 BOT_TOKEN = str(BOT_TOKEN)
 PORT = int(os.environ.get("PORT", 8080))
-WEBHOOK_PATH = "webhook"
+WEBHOOK_PATH = "webhook-enco-SECRET123"
 WEBHOOK_URL = f"https://enco-prestarail-bot.up.railway.app/{WEBHOOK_PATH}"
 bot = Bot(token=BOT_TOKEN)
 
