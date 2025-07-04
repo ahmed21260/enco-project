@@ -15,6 +15,7 @@ import { realtimeDb } from '../firebaseRealtime';
 import { ref, onValue } from 'firebase/database';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import { useOperateursLive } from '../hooks/useOperateursLive';
 
 // Fix pour les icônes Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -24,22 +25,30 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Icône personnalisée pour les opérateurs
-const createOperatorIcon = (type) => {
-  const color = type === 'prise_de_poste' ? '#28a745' : '#dc3545';
+const getColorForStatus = (status) => {
+  switch (status) {
+    case 'prise_de_poste': return '#28a745'; // Vert
+    case 'fin_de_poste': return '#dc3545';   // Rouge
+    case 'anomalie': return '#ffc107';       // Orange
+    case 'urgence': return '#e74c3c';        // Rouge vif
+    default: return '#6c757d';               // Gris
+  }
+};
+
+const createOperatorIcon = (status) => {
+  const color = getColorForStatus(status);
   return L.divIcon({
-    className: 'custom-marker',
+    className: 'custom-operator-marker',
     html: `<div style="
       background-color: ${color};
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      animation: pulse 2s infinite;
-    "></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+      border: 2px solid white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      "></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
 };
 
@@ -68,19 +77,10 @@ const createAlertIcon = (type) => {
 };
 
 const Dashboard = () => {
-  const [positions, setPositions] = useState([]);
+  const { operateursLive, stats, positions, anomalies, urgences, checklists } = useOperateursLive();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('carte');
-  const [stats, setStats] = useState({
-    totalOperateurs: 12,
-    enLigne: 5,
-    bonsJour: 7,
-    bonsSemaine: 32,
-    pannesEnCours: 2,
-    pannesResolues: 6,
-    alertesUrgence: 1
-  });
   const [selectedAction, setSelectedAction] = useState(null);
   const [alertesUrgence, setAlertesUrgence] = useState([]);
   const [alertes, setAlertes] = useState([]);
@@ -91,11 +91,11 @@ const Dashboard = () => {
   useEffect(() => {
     setLoading(true);
     const unsub = onSnapshot(collection(db, 'positions_log'), (snap) => {
-      setPositions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      // setPositions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))); // Supprimer l'appel à setPositions
       setLoading(false);
     }, (err) => {
       setLoading(false);
-      setPositions([]);
+      // setPositions([]); // Supprimer l'appel à setPositions
     });
     return () => unsub();
   }, []);
@@ -121,14 +121,14 @@ const Dashboard = () => {
       <div className="carte-header">
         <h2>🗺️ Carte des Opérateurs ENCO</h2>
         <div className="carte-controls">
-          <span className="operateurs-count">👥 {operateursActifs.length} opérateur(s) en poste</span>
+          <span className="operateurs-count">👥 {operateursLive.length} opérateur(s) en poste</span>
           <span className="total-count">📊 {positions.length} total</span>
         </div>
       </div>
       
       <MapContainer 
-        center={positions.length > 0 ? [positions[0].latitude, positions[0].longitude] : defaultCenter}
-        zoom={positions.length > 0 ? 10 : 6}
+        center={positions.length > 0 && typeof positions[0].latitude === 'number' && typeof positions[0].longitude === 'number' ? [positions[0].latitude, positions[0].longitude] : defaultCenter}
+        zoom={positions.length > 0 && typeof positions[0].latitude === 'number' && typeof positions[0].longitude === 'number' ? 10 : 6}
         className="map-container"
       >
         <TileLayer
@@ -136,7 +136,7 @@ const Dashboard = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
         
-        {positions.map((pos, index) => (
+        {positions.filter(pos => typeof pos.latitude === 'number' && typeof pos.longitude === 'number').map((pos, index) => (
           <Marker
             key={`${pos.operateur_id}-${index}`}
             position={[pos.latitude, pos.longitude]}
@@ -148,7 +148,7 @@ const Dashboard = () => {
                 <p><strong>ID:</strong> {pos.operateur_id}</p>
                 <p><strong>Statut:</strong> {pos.type === 'prise_de_poste' ? '🟢 En poste' : '🔴 Fin de poste'}</p>
                 <p><strong>Heure:</strong> {new Date(pos.timestamp).toLocaleString('fr-FR')}</p>
-                <p><strong>Position:</strong> {pos.latitude.toFixed(4)}, {pos.longitude.toFixed(4)}</p>
+                <p><strong>Position:</strong> {typeof pos.latitude === 'number' && typeof pos.longitude === 'number' ? `${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}` : 'N/A'}</p>
                 {pos.description && (
                   <p><strong>Action:</strong> {pos.description}</p>
                 )}
@@ -163,7 +163,7 @@ const Dashboard = () => {
         ))}
         
         {/* Marqueurs pour les alertes */}
-        {alertes.map((alerte, index) => (
+        {alertes.filter(alerte => typeof alerte.latitude === 'number' && typeof alerte.longitude === 'number').map((alerte, index) => (
           <Marker
             key={`alerte-${alerte.id}-${index}`}
             position={[alerte.latitude, alerte.longitude]}
@@ -187,7 +187,7 @@ const Dashboard = () => {
         ))}
         
         {/* Marqueurs pour les urgences */}
-        {alertesUrgence.map((urgence, index) => (
+        {urgences.filter(urgence => typeof urgence.latitude === 'number' && typeof urgence.longitude === 'number').map((urgence, index) => (
           <Marker
             key={`urgence-${urgence.id}-${index}`}
             position={[urgence.latitude, urgence.longitude]}
@@ -378,11 +378,9 @@ const Dashboard = () => {
     </div>
   );
 
-  const operateursActifs = positions.filter(pos => pos.type === 'prise_de_poste');
-
   const renderStats = () => (
     <div className="stats-section">
-      <CardsSummary stats={stats} operateursActifs={operateursActifs} alertesUrgenceList={alertesUrgence} />
+      <CardsSummary stats={stats} operateursActifs={operateursLive} alertesUrgenceList={urgences} />
       <StatsCharts />
       <h3 style={{marginTop:'2rem'}}>Dernières actions</h3>
       <TimelineActions />
