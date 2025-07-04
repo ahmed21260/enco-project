@@ -123,35 +123,31 @@ async def error_handler(update, context):
 
 def main():
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
+    application.add_error_handler(error_handler)
     
     # Ajouter le handler de logging en premier
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
     
-    # Ajouter les handlers de commandes en premier
+    # Ajouter les handlers de commandes
     application.add_handler(CommandHandler("start", menu_principal))
     application.add_handler(CommandHandler("test_rappel", test_rappel))
     application.add_handler(CommandHandler("docs", consulter_documents))
     application.add_handler(CommandHandler("historique", afficher_historique))
     
-    # Ajouter les handlers de menu
-    for handler in get_menu_handlers():
-        application.add_handler(handler)
-    
-    # Ajouter le handler de texte général pour les messages non-commandes
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
-    
     # Ajouter les handlers spécifiques
     application.add_handler(prise_handler())
     application.add_handler(fin_handler())
     application.add_handler(get_checklist_handler())
-    application.add_handler(get_urgence_handler())
     application.add_handler(get_anomalie_handler())
-    application.add_handler(MessageHandler(filters.Regex("^Portail d'accès SNCF$"), portail_sncf))
+    application.add_handler(get_urgence_handler())
     application.add_handler(CallbackQueryHandler(portail_callback))
+    
+    # Ajouter les handlers de photos et voix
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
-    application.add_handler(MessageHandler(filters.Regex("^Envoyer une photo$"), prompt_photo))
-    application.add_error_handler(error_handler)
+    
+    # Ajouter le handler de texte général en dernier
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 
     logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram en mode webhook sur le port {PORT} !")
     logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")

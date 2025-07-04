@@ -42,25 +42,18 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "📌 Prise de poste":
         await start_prise(update, context)
-        await menu_principal(update, context)
     elif text == "📷 Envoyer une photo":
         await start_photo(update, context)
-        await menu_principal(update, context)
     elif text == "📄 Envoyer bon signé":
         await start_fin(update, context)
-        await menu_principal(update, context)
     elif text == "🛑 URGENCE / INCIDENT":
         await urgence(update, context)
-        await menu_principal(update, context)
     elif text == "🚧 Portail SNCF / Plan accès":
         await portail_sncf(update, context)
-        await menu_principal(update, context)
     elif text == "🔧 Rapport technique machine":
         await declare_panne_start(update, context)
-        await menu_principal(update, context)
     elif text == "🗓️ Planning":
         await planning_handler(update, context)
-        await menu_principal(update, context)
     else:
         await menu_principal(update, context)
 
