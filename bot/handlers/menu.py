@@ -15,6 +15,7 @@ from PIL import Image
 from pyzbar.pyzbar import decode as decode_qr
 import os
 from handlers.photo import start_photo
+import requests
 
 MENU_KEYBOARD = [
     ["📌 Prise de poste", "📷 Envoyer une photo"],
@@ -296,6 +297,19 @@ async def declare_panne_commentaire(update: Update, context: ContextTypes.DEFAUL
     await update.message.reply_text("✅ Incident enregistré et transmis à la maintenance.")
     context.user_data['declare_panne'] = None
 
+async def apitest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    api_url = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api/positions")
+    try:
+        response = requests.get(api_url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            msg = f"✅ Connexion API OK\nNombre de positions: {len(data) if isinstance(data, list) else 'inconnu'}"
+        else:
+            msg = f"❌ Erreur API: {response.status_code} - {response.text[:100]}"
+    except Exception as e:
+        msg = f"❌ Exception lors de la requête API: {e}"
+    await update.message.reply_text(msg)
+
 def get_menu_handlers():
     return [
         CommandHandler("start", menu_principal),
@@ -316,5 +330,6 @@ def get_menu_handlers():
         MessageHandler(filters.Regex("^🛠️ Déclarer une panne machine$"), declare_panne_start),
         MessageHandler(filters.TEXT & ~filters.COMMAND, declare_panne_type),
         MessageHandler(filters.PHOTO, declare_panne_photo),
-        MessageHandler(filters.TEXT & ~filters.COMMAND, declare_panne_commentaire)
+        MessageHandler(filters.TEXT & ~filters.COMMAND, declare_panne_commentaire),
+        CommandHandler("apitest", apitest_handler)
     ] 
