@@ -74,15 +74,29 @@ async def send_daily_reminder():
             except Exception as e:
                 logging.error(f"Erreur envoi à {chat_id} : {e}")
 
+ADMIN_ID = 7648184043
+
 async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("Accès réservé à l'administrateur.")
+        return
     await send_daily_reminder()
     if update.message:
         await update.message.reply_text("Rappel envoyé à tous les opérateurs inscrits !")
 
 async def test_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler de test simple"""
+    print("Handler /test exécuté !")
     if update.message:
         await update.message.reply_text("✅ Test réussi ! Le bot fonctionne !")
+    else:
+        print(f"update.message est None ! update = {update}")
+
+async def ping(update, context):
+    print("Handler /ping exécuté !")
+    if update.message:
+        await update.message.reply_text("pong")
+    else:
+        print(f"update.message est None ! update = {update}")
 
 def schedule_reminders():
     scheduler = AsyncIOScheduler()
@@ -135,12 +149,13 @@ def main():
     
     # Ajouter un handler de test
     application.add_handler(CommandHandler("test", test_handler))
+    application.add_handler(CommandHandler("ping", ping))
     
     # Ajouter les handlers de commandes
     application.add_handler(CommandHandler("start", menu_principal))
     application.add_handler(CommandHandler("test_rappel", test_rappel))
-    application.add_handler(CommandHandler("docs", consulter_documents))
-    application.add_handler(CommandHandler("historique", afficher_historique))
+    application.add_handler(CommandHandler("docs", lambda u, c: consulter_documents(u, c) if u.effective_user.id == ADMIN_ID else u.message.reply_text("Accès réservé à l'administrateur.")))
+    application.add_handler(CommandHandler("historique", lambda u, c: afficher_historique(u, c) if u.effective_user.id == ADMIN_ID else u.message.reply_text("Accès réservé à l'administrateur.")))
     
     # Ajouter les handlers spécifiques
     application.add_handler(prise_handler())
