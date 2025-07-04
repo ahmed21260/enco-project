@@ -99,7 +99,7 @@ async def ping(update, context):
         print(f"update.message est None ! update = {update}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.info("Handler /start exécuté !")
+    logging.info("✅ Handler /start bien exécuté !")
     await update.message.reply_text("Bienvenue sur le bot ENCO !")
 
 async def prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -153,7 +153,7 @@ def main():
     application.add_error_handler(error_handler)
     
     # Ajouter le handler de logging en premier
-    application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
+    application.add_handler(MessageHandler(filters.ALL, log_update), group=1)
     
     # Ajouter un handler de test
     application.add_handler(CommandHandler("test", test_handler))
