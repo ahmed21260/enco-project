@@ -3,11 +3,14 @@ from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from handlers.prise_de_poste import start_prise
 from handlers.fin_de_poste import start_fin
 from handlers.checklist import start_checklist
-from handlers.anomalie import get_anomalie_handler
+from handlers.anomalie import start_anomalie_wizard
+from handlers.bons_attachement import start_bon_wizard
+from handlers.outils_ferroviaires import start_outils_ferroviaires, handle_outils_ferroviaires
 from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
 from handlers.urgence import urgence, hors_voie
 from handlers.portail import portail_sncf
+from handlers.planning import start_planning_wizard
 from utils.firestore import db
 import datetime
 import io
@@ -19,9 +22,9 @@ import requests
 
 MENU_KEYBOARD = [
     ["📌 Prise de poste", "📷 Envoyer une photo"],
-    ["📄 Envoyer bon signé", "🛑 URGENCE / INCIDENT"],
-    ["🚧 Portail SNCF / Plan accès", "🔧 Rapport technique machine"],
-    ["🗓️ Planning"]  # SUPPRESSION: QR code/Scan Matériel
+    ["📄 Bon d'attachement", "🛑 URGENCE / INCIDENT"],
+    ["🔧 Déclarer une panne", "🗺️ Outils ferroviaires"],
+    ["🗓️ Planning"]
 ]
 
 async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -31,9 +34,11 @@ async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Voici ce que tu peux faire :\n"
         "📌 Prise de poste : démarre ta journée\n"
         "🖼️ Envoyer une photo : signale un état ou une anomalie\n"
-        "🛑 Urgence : déclare un incident immédiat\n"
-        "📄 Bon signé : envoie un bon d'attachement\n"
-        "🗺️ Planning, etc.\n\n"  # SUPPRESSION: QR code
+        "🛑 URGENCE / INCIDENT : déclare une urgence immédiate\n"
+        "🔧 Déclarer une panne : signale une anomalie machine\n"
+        "📄 Bon d'attachement : envoie un bon d'attachement\n"
+        "🗺️ Outils ferroviaires : géoportail, règlements, procédures\n"
+        "🗓️ Planning, etc.\n\n"
         "Utilise les boutons ci-dessous pour naviguer, ou tape /aide pour plus d'infos.",
         reply_markup=reply_markup
     )
@@ -44,18 +49,18 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_prise(update, context)
     elif text == "📷 Envoyer une photo":
         await start_photo(update, context)
-    elif text == "📄 Envoyer bon signé":
-        await start_fin(update, context)
+    elif text == "📄 Bon d'attachement":
+        await start_bon_wizard(update, context)
     elif text == "🛑 URGENCE / INCIDENT":
         await urgence(update, context)
-    elif text == "🚧 Portail SNCF / Plan accès":
-        await portail_sncf(update, context)
-    elif text == "🔧 Rapport technique machine":
-        await declare_panne_start(update, context)
+    elif text == "🔧 Déclarer une panne":
+        await start_anomalie_wizard(update, context)
+    elif text == "🗺️ Outils ferroviaires":
+        await start_outils_ferroviaires(update, context)
     elif text == "🗓️ Planning":
-        await planning_handler(update, context)
+        await start_planning_wizard(update, context)
     else:
-        await menu_principal(update, context)
+        await handle_outils_ferroviaires(update, context)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
