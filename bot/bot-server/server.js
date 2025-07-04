@@ -26,9 +26,27 @@ if (WEBHOOK_URL) {
 // 🧠 Middleware pour parser le JSON
 app.use(bodyParser.json());
 
+// 🏥 Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', service: 'enco-bot-server' });
+});
+
 // 📬 Route webhook (nécessaire si mode webhook)
 app.post('/webhook', (req, res) => {
   const body = req.body;
+  
+  // Ignorer les notifications de déploiement Railway
+  if (body && body.type === 'DEPLOY') {
+    console.log('🚂 Notification de déploiement Railway reçue, ignorée');
+    return res.status(200).json({ message: 'Railway deployment notification ignored' });
+  }
+  
+  // Ignorer les autres types de notifications Railway
+  if (body && (body.service || body.project)) {
+    console.log('🚂 Notification Railway reçue, ignorée');
+    return res.status(200).json({ message: 'Railway notification ignored' });
+  }
+  
   // Vérifie la présence de update_id (champ obligatoire Telegram)
   if (!body || typeof body.update_id === 'undefined') {
     console.error('❌ Webhook reçu sans update_id ou format incorrect:', body);
