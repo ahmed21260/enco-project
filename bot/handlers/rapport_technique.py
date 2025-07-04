@@ -58,7 +58,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Récapitulatif
     type_rapport = context.user_data.get('type_rapport', '')
     description = context.user_data.get('description', 'Aucune')
-    photo = context.user_data.get('photo_file_id') ? 'Oui' : 'Non'
+    photo = 'Oui' if context.user_data.get('photo_file_id') else 'Non'
     
     await update.message.reply_text(
         f"📋 **Récapitulatif Rapport Technique**\n\n"
