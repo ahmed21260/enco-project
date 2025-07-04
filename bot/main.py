@@ -105,9 +105,16 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update, context):
     logging.error(msg="Exception while handling an update:", exc_info=context.error)
 
+async def webhook_error_handler(update, context):
+    """Gestionnaire d'erreur spécifique pour les webhooks invalides"""
+    if context.error and "unexpected keyword argument 'type'" in str(context.error):
+        logging.warning("🚫 Requête non-Telegram ignorée (probablement notification Railway)")
+        return
+    logging.error(msg="Exception while handling an update:", exc_info=context.error)
+
 def main():
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
-    application.add_error_handler(error_handler)
+    application.add_error_handler(webhook_error_handler)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=0)
     application.add_handler(CommandHandler("test_rappel", test_rappel))
     for handler in get_menu_handlers():
@@ -127,7 +134,6 @@ def main():
 
     logging.info(f"✅ Bot ENCO démarré et en écoute sur Telegram en mode webhook sur le port {PORT} !")
     logging.info(f"🔗 Webhook URL : {WEBHOOK_URL}")
-    logging.info("VERSION DEBUG 2025-07-04 - WEBHOOK NATIF")
 
     application.run_webhook(
         listen="0.0.0.0",
