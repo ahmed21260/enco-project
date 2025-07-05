@@ -3,14 +3,12 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './Dashboard.css';
-import CardsSummary from './CardsSummary';
-import StatsCharts from './StatsCharts';
 import TimelineActions from './TimelineActions';
 import Operateurs from './Operateurs';
 import BonsAttachement from './BonsAttachement';
 import OutilsFerroviaires from './OutilsFerroviaires';
 import Planning from './Planning';
-import ScoringDashboard from './ScoringDashboard';
+import StatsDashboard from './StatsDashboard';
 import { realtimeDb } from '../firebaseRealtime';
 import { ref, onValue } from 'firebase/database';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -379,15 +377,7 @@ const Dashboard = () => {
   );
 
   const renderStats = () => (
-    <div className="stats-section">
-      <CardsSummary stats={stats} operateursActifs={operateursLive} alertesUrgenceList={urgences} />
-      <StatsCharts />
-      <h3 style={{marginTop:'2rem'}}>Dernières actions</h3>
-      <TimelineActions />
-      <div style={{marginTop:'3rem'}}>
-        <ScoringDashboard />
-      </div>
-    </div>
+    <StatsDashboard />
   );
 
   return (
