@@ -5,6 +5,29 @@ const cors = require('cors');
 const admin = require('firebase-admin');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
+// 🔮 OpenAI SDK (v4)
+const { OpenAI } = require('openai');
+
+// Instance configurée une seule fois
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+/**
+ * Appelle l'API OpenAI avec un prompt texte et renvoie la réponse brute.
+ * Le modèle et la température peuvent être surchargés via variables d'environnement.
+ */
+async function callOpenAIAPI(prompt) {
+  const completion = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo-0125',
+    temperature: 0.3,
+    messages: [
+      { role: 'system', content: 'Tu es un assistant expert ferroviaire pour le projet ENCO.' },
+      { role: 'user', content: prompt }
+    ]
+  });
+  return completion.choices?.[0]?.message?.content?.trim() || '';
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -245,6 +268,40 @@ app.post('/upload-bon-signe', upload.single('photo'), async (req, res) => {
     res.json({ success: true, url, bon_id: docRef.id });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// --------------
+// 🔗 Webhook IA : analyse et priorisation des anomalies pour Firebuzz
+// --------------
+
+app.post('/webhook', async (req, res) => {
+  try {
+    const { input, metadata, source } = req.body || {};
+
+    // Sécurité : accepter uniquement la source attendue
+    if (source !== 'backend-agent') {
+      return res.status(400).json({ error: 'Source non autorisée' });
+    }
+
+    // Construction du prompt dynamique
+    const prompt = `\nTu es un assistant expert ferroviaire pour le projet ENCO.\nVoici les données reçues :\n- Messages Telegram : ${JSON.stringify(metadata?.telegramMessages || [])}\n- Anomalies détectées : ${JSON.stringify(metadata?.anomalies || [])}\n- Pings géolocalisés : ${JSON.stringify(metadata?.pings || [])}\n- Données Firestore : ${JSON.stringify(metadata?.firestoreData || {})}\n- Logique métier Highway : ${metadata?.highwayLogic || ''}\n\nAnalyse ces données, puis :\n1) Classe et priorise les anomalies.\n2) Propose un résumé clair et structuré.\n3) Donne une recommandation/action rapide.\n4) Effectue une mini recherche (synthèse) sur l'anomalie la plus urgente pour aider le technicien qui la reçoit.\n\nRéponds en JSON avec ces champs :\n{\n  "priorite": "Critique|Moyenne|Basse",\n  "resume": "...",\n  "action": "...",\n  "miniRecherche": "Texte explicatif pour aider le technicien"\n}`;
+
+    // Appel OpenAI
+    const openaiResponse = await callOpenAIAPI(prompt);
+
+    // Tentative de parse JSON, sinon renvoyer brut
+    let parsed;
+    try {
+      parsed = JSON.parse(openaiResponse);
+    } catch (e) {
+      parsed = { raw: openaiResponse };
+    }
+
+    return res.json({ response: parsed });
+  } catch (err) {
+    console.error('❌ Erreur /webhook :', err);
+    return res.status(500).json({ error: 'Erreur interne serveur' });
   }
 });
 
