@@ -91,17 +91,21 @@ async def confirm_rapport(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         db.collection('rapports_techniques').add(rapport_data)
         await update.message.reply_text(
-            "✅ **RAPPORT TECHNIQUE ENREGISTRÉ !**\n\n"
-            f"📋 Le rapport a été transmis à l'encadrement.\n"
-            f"📝 Description et photo enregistrées.\n"
-            f"🔄 Tu seras contacté pour le suivi.",
+            "\u2705 **RAPPORT TECHNIQUE ENREGISTR\u00c9 !**\n\n"
+            f"\ud83d\udccb Le rapport a \u00e9t\u00e9 transmis \u00e0 l'encadrement.\n"
+            f"\ud83d\udcdd Description et photo enregistr\u00e9es.\n"
+            f"\ud83d\udd04 Tu seras contact\u00e9 pour le suivi.",
             reply_markup=ReplyKeyboardMarkup(
                 [
                     ["Menu principal", "Nouveau rapport technique"],
-                    ["Déclarer une panne", "URGENCE SNCF"]
+                    ["D\u00e9clarer une panne", "URGENCE SNCF"]
                 ], resize_keyboard=True
             )
         )
+        # Ajout : gestion du retour menu principal
+        if update.message.text == "Menu principal":
+            from handlers.menu import start
+            await start(update, context)
     except Exception as e:
         await update.message.reply_text(f"❌ Erreur lors de l'enregistrement : {str(e)}")
     

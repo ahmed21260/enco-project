@@ -1,8 +1,8 @@
-.cards-summary-container {
+.cards-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 20px;
+  margin-bottom: 32px;
 }
 .card-summary {
   background: #fff;

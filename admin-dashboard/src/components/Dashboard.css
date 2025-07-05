@@ -3,6 +3,9 @@
   display: flex;
   height: 100vh;
   background-color: #f8f9fa;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
 }
 
 /* Sidebar */
@@ -71,6 +74,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
 }
 
 .dashboard-header {
@@ -121,15 +125,18 @@
   flex: 1;
   padding: 30px;
   overflow-y: auto;
+  width: 100%;
 }
 
 /* Carte section */
 .carte-section {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  height: calc(100vh - 200px);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  height: calc(100vh - 140px);
+  width: 100%;
+  margin: 0;
 }
 
 .carte-header {
@@ -468,5 +475,42 @@
   
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+} 
+
+@media (max-width: 1200px) {
+  .carte-section, .main-content, .content-area {
+    padding: 8px;
+    border-radius: 4px;
+  }
+} 
+
+.map-legend-overlay {
+  position: absolute;
+  bottom: 18px;
+  left: 18px;
+  background: rgba(255,255,255,0.95);
+  padding: 14px 18px 10px 18px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  z-index: 1000;
+  font-size: 15px;
+  min-width: 120px;
+  max-width: 90vw;
+  pointer-events: none;
+}
+.map-legend-overlay b {
+  font-size: 15px;
+  color: #222;
+  margin-bottom: 6px;
+  display: block;
+}
+@media (max-width: 700px) {
+  .map-legend-overlay {
+    left: 6px;
+    bottom: 6px;
+    padding: 8px 10px 6px 10px;
+    font-size: 13px;
+    border-radius: 8px;
   }
 } 

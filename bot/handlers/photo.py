@@ -49,11 +49,15 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Enregistrement Firestore (photos)
     from utils.firestore import db
+    user_data = getattr(context, 'user_data', {}) or {}
     db.collection('photos').add({
         "operateur_id": user.id,
         "operatorId": user.id,
+        "priseId": user_data.get('priseId', ''),
+        "chantier": user_data.get('chantier', ''),
+        "type": user_data.get('type', ''),
         "timestamp": update.message.date.isoformat(),
-        "urlPhoto": public_url
+        "url": public_url
     })
 
     if public_url:

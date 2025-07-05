@@ -14,48 +14,30 @@ L.Icon.Default.mergeOptions({
 });
 
 // Icônes personnalisées pour les opérateurs
-const createOperatorIcon = (status, hasAlert = false) => {
-  let color = '#28a745'; // Vert par défaut
-  let size = 20;
-  
+const getColorForStatus = (status) => {
   switch (status) {
-    case 'prise_de_poste':
-      color = '#28a745'; // Vert
-      break;
-    case 'fin_de_poste':
-      color = '#dc3545'; // Rouge
-      break;
-    case 'urgence':
-      color = '#e74c3c'; // Rouge vif
-      size = 25;
-      break;
-    case 'anomalie':
-      color = '#f39c12'; // Orange
-      size = 22;
-      break;
-    default:
-      color = '#6c757d'; // Gris
+    case 'prise_de_poste': return '#28a745'; // Vert
+    case 'fin_de_poste': return '#dc3545';   // Rouge
+    case 'anomalie': return '#ffc107';       // Orange
+    case 'urgence': return '#e74c3c';        // Rouge vif
+    default: return '#6c757d';               // Gris
   }
-  
-  // Animation pour les alertes
-  const animation = hasAlert ? 'pulse 1s infinite' : 'none';
-  
+};
+
+const createOperatorIcon = (status) => {
+  const color = getColorForStatus(status);
   return L.divIcon({
     className: 'custom-operator-marker',
     html: `<div style="
       background-color: ${color};
-      width: ${size}px;
-      height: ${size}px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      animation: ${animation};
-      position: relative;
-    ">
-      ${hasAlert ? '<div class="alert-indicator">🚨</div>' : ''}
-    </div>`,
-    iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
+      border: 2px solid white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      "></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
 };
 
@@ -163,6 +145,9 @@ const LiveMap = () => {
     if (op.type === 'fin_de_poste' && !filters.showInactive) return false;
     return true;
   });
+
+  // Filtrer uniquement ceux qui ont une position pour la carte
+  const operateursAvecPosition = filteredOperateurs.filter(op => typeof op.latitude === 'number' && typeof op.longitude === 'number');
 
   // Filtrer les alertes
   const filteredAlertes = alertes.filter(alerte => {
@@ -294,7 +279,7 @@ const LiveMap = () => {
           />
 
           {/* Marqueurs des opérateurs */}
-          {filteredOperateurs.map((operator) => {
+          {operateursAvecPosition.map((operator) => {
             const status = getOperatorStatus(operator);
             const hasAlert = alertes.some(a => a.operatorId === operator.operatorId);
             
@@ -302,7 +287,7 @@ const LiveMap = () => {
               <Marker
                 key={operator.id}
                 position={[operator.latitude, operator.longitude]}
-                icon={createOperatorIcon(status, hasAlert)}
+                icon={createOperatorIcon(status)}
                 eventHandlers={{
                   click: () => setSelectedOperator(operator)
                 }}
@@ -312,7 +297,7 @@ const LiveMap = () => {
                     <h3>👤 {operator.operatorName || operator.nom}</h3>
                     <p><strong>Statut:</strong> {getStatusText(status)}</p>
                     <p><strong>Heure:</strong> {new Date(operator.timestamp).toLocaleString('fr-FR')}</p>
-                    <p><strong>Position:</strong> {operator.latitude.toFixed(4)}, {operator.longitude.toFixed(4)}</p>
+                    <p><strong>Position:</strong> {typeof operator.latitude === 'number' && typeof operator.longitude === 'number' ? `${operator.latitude.toFixed(4)}, ${operator.longitude.toFixed(4)}` : 'N/A'}</p>
                     {operator.chantier && <p><strong>Chantier:</strong> {operator.chantier}</p>}
                     {operator.machine && <p><strong>Machine:</strong> {operator.machine}</p>}
                     {hasAlert && (

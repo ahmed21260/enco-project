@@ -45,24 +45,29 @@ async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text == "📌 Prise de poste":
+    if text == "📌 Prendre mon poste":
         await start_prise_wizard(update, context)
-    elif text == "📷 Envoyer une photo":
-        await start_photo(update, context)
-    elif text == "📄 Bon d'attachement":
-        await start_bon_wizard(update, context)
-    elif text == "🛑 URGENCE / INCIDENT":
+    elif text == "Fin de poste / Bon papier" or text == "Fin de poste":
+        await start_fin_wizard(update, context)
+    elif text == "🚨 Déclarer une urgence" or text == "🛑 URGENCE / INCIDENT":
         await start_urgence_wizard(update, context)
-    elif text == "🔧 Déclarer une panne":
+    elif text == "🛠️ Déclarer une anomalie" or text == "🔧 Déclarer une panne":
         await start_anomalie_wizard(update, context)
+    elif text == "✅ Remplir une checklist" or text == "Checklist sécurité":
+        await start_checklist(update, context)
+    elif text == "📄 Documents":
+        await consulter_documents(update, context)
     elif text == "🗺️ Outils ferroviaires":
         await start_outils_ferroviaires(update, context)
+    elif text == "Menu principal":
+        await start(update, context)
+    elif text == "📷 Envoyer une photo":
+        await start_photo(update, context)
     elif text == "🗓️ Planning":
         await start_planning_wizard(update, context)
-    elif text == "Fin de poste / Bon papier":
-        await start_fin_wizard(update, context)
     else:
-        await handle_outils_ferroviaires(update, context)
+        # Pour tout texte non reconnu, retour à l'accueil immersif
+        await start(update, context)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (

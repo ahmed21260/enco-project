@@ -124,15 +124,38 @@ const Operateurs = () => {
     <div className="operateurs-section">
       <h2>👷‍♂️ Liste des Opérateurs</h2>
       <input type="text" placeholder="Rechercher un opérateur..." value={search} onChange={e => setSearch(e.target.value)} />
-      <div className="operateurs-list">
-        {filtered.map(op => (
-          <div key={op.operatorId || op.operateur_id} className="operateur-card" onClick={() => setSelected(op)}>
-            <b>{op.nom}</b>
-            <span style={{marginLeft:8, color: op.type === 'prise_de_poste' ? '#28a745' : op.type === 'fin_de_poste' || op.type === 'fin' ? '#dc3545' : op.type === 'anomalie' ? '#ffc107' : op.type === 'urgence' ? '#e74c3c' : '#888'}}>
-              {op.type}
-            </span>
-          </div>
-        ))}
+      <div className="operateurs-list-table">
+        <div className="operateurs-table-header">
+          <span style={{width:48}}></span>
+          <span style={{flex:2, fontWeight:700, color:'#333'}}>Nom</span>
+          <span style={{flex:1, fontWeight:700, color:'#333'}}>Statut</span>
+          <span style={{width:80}}></span>
+        </div>
+        {filtered.map((op, idx) => {
+          const initial = (op.nom || '?').charAt(0).toUpperCase();
+          const isPrise = op.type === 'prise_de_poste';
+          const isFin = op.type === 'fin_de_poste' || op.type === 'fin';
+          return (
+            <div key={op.operatorId || op.operateur_id} className={`operateur-row${idx%2===0?' operateur-row-alt':''}`} onClick={() => setSelected(op)}>
+              <div className="operateur-avatar" style={{
+                width: 36, height: 36, fontSize: 18, marginRight: 0, border: `2px solid ${isPrise ? '#28a745' : isFin ? '#dc3545' : '#ccc'}`
+              }}>{initial}</div>
+              <span style={{ flex:2, fontWeight: 600, fontSize: 15, color: '#222' }}>{op.nom}</span>
+              <span className="operateur-badge" style={{
+                background: isPrise ? '#28a74522' : isFin ? '#dc354522' : '#eee',
+                color: isPrise ? '#28a745' : isFin ? '#dc3545' : '#888',
+                borderRadius: 16,
+                padding: '3px 12px',
+                fontWeight: 600,
+                fontSize: 14,
+                minWidth: 80,
+                textAlign: 'center',
+                display: 'inline-block',
+              }}>{op.type === 'prise_de_poste' ? 'Prise de poste' : op.type === 'fin_de_poste' || op.type === 'fin' ? 'Fin de poste' : op.type}</span>
+              <button className="operateur-detail-btn" style={{marginLeft:12, background:'#f5f5f5', border:'none', borderRadius:8, padding:'4px 12px', cursor:'pointer', fontWeight:600, color:'#1976d2'}} onClick={e => {e.stopPropagation();setSelected(op);}}>Détail</button>
+            </div>
+          );
+        })}
       </div>
       {selected && (
         <div className="modal-overlay" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setSelected(null)}>

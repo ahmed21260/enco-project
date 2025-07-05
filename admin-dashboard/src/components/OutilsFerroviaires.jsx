@@ -202,7 +202,7 @@ const OutilsFerroviaires = () => {
                 
                 <div className="geoportail-details">
                   <p><strong>Distance :</strong> {action.distance_km} km</p>
-                  <p><strong>Position :</strong> {action.latitude.toFixed(4)}, {action.longitude.toFixed(4)}</p>
+                  <p><strong>Position :</strong> {typeof action.latitude === 'number' && typeof action.longitude === 'number' ? `${action.latitude.toFixed(4)}, ${action.longitude.toFixed(4)}` : 'N/A'}</p>
                 </div>
               </div>
             ))

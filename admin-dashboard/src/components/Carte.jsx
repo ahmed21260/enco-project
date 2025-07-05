@@ -141,7 +141,7 @@ const Carte = () => {
                 <p><strong>ID:</strong> {pos.operateur_id}</p>
                 <p><strong>Type:</strong> {pos.type === 'prise_de_poste' ? '🟢 Prise de poste' : '🔴 Fin de poste'}</p>
                 <p><strong>Heure:</strong> {new Date(pos.timestamp).toLocaleString('fr-FR')}</p>
-                <p><strong>Position:</strong> {pos.latitude.toFixed(4)}, {pos.longitude.toFixed(4)}</p>
+                <p><strong>Position:</strong> {typeof pos.latitude === 'number' && typeof pos.longitude === 'number' ? `${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}` : 'N/A'}</p>
                 {pos.checklistEffectuee && (
                   <p style={{color: '#28a745', fontWeight: 'bold'}}>✅ Checklist effectuée</p>
                 )}
@@ -178,7 +178,7 @@ const Carte = () => {
               <div><b>Type :</b> {urgence.type}</div>
               <div><b>Description :</b> {urgence.description || 'Aucune'}</div>
               <div><b>Heure :</b> {new Date(urgence.timestamp).toLocaleString('fr-FR')}</div>
-              <div><b>Position :</b> {urgence.latitude.toFixed(4)}, {urgence.longitude.toFixed(4)}</div>
+              <div><b>Position :</b> {typeof urgence.latitude === 'number' && typeof urgence.longitude === 'number' ? `${urgence.latitude.toFixed(4)}, ${urgence.longitude.toFixed(4)}` : 'N/A'}</div>
               <div style={{marginTop:'8px'}}>
                 <button 
                   onClick={() => handleResolveUrgence(urgence.id)}

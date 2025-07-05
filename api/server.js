@@ -10,7 +10,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "https://enco-prestarail.web.app"
+}));
 app.use(express.json());
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
