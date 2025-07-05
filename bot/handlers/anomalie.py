@@ -173,17 +173,21 @@ async def confirm_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_anomalie(anomalie_data)
     
     await update.message.reply_text(
-        f"✅ **ANOMALIE ENREGISTRÉE !**\n\n"
-        f"🔧 L'anomalie a été transmise à l'encadrement.\n"
-        f"📸 Photo et position enregistrées.\n"
-        f"🔄 Tu seras contacté pour le suivi.",
+        f"\u2705 **ANOMALIE ENREGISTR\u00c9E !**\n\n"
+        f"\ud83d\udd27 L'anomalie a \u00e9t\u00e9 transmise \u00e0 l'encadrement.\n"
+        f"\ud83d\udcf8 Photo et position enregistr\u00e9es.\n"
+        f"\ud83d\udd04 Tu seras contact\u00e9 pour le suivi.",
         reply_markup=ReplyKeyboardMarkup(
             [
-                ["Menu principal", "Déclarer une autre anomalie"],
+                ["Menu principal", "D\u00e9clarer une autre anomalie"],
                 ["URGENCE SNCF", "Envoyer photo en cours de mission"]
             ], resize_keyboard=True
         )
     )
+    # Ajout : gestion du retour menu principal
+    if update.message.text == "Menu principal":
+        from handlers.menu import start
+        await start(update, context)
     return ConversationHandler.END
 
 def get_anomalie_wizard_handler():

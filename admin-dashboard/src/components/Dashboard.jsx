@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -16,6 +16,7 @@ import { ref, onValue } from 'firebase/database';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useOperateursLive } from '../hooks/useOperateursLive';
+import { toast } from 'react-toastify';
 
 // Fix pour les icônes Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -84,9 +85,71 @@ const Dashboard = () => {
   const [selectedAction, setSelectedAction] = useState(null);
   const [alertesUrgence, setAlertesUrgence] = useState([]);
   const [alertes, setAlertes] = useState([]);
+  const [historiqueFiltre, setHistoriqueFiltre] = useState({ operateur: 'all', type: 'all', date: '' });
+  const actions = [
+    ...positions.map(a => ({ ...a, type: a.type || 'prise_de_poste' })),
+    ...anomalies.map(a => ({ ...a, type: 'anomalie' })),
+    ...urgences.map(a => ({ ...a, type: 'urgence' })),
+    ...checklists.map(a => ({ ...a, type: 'checklist' })),
+  ];
+  const filteredActions = actions.filter(a => {
+    if (historiqueFiltre.operateur !== 'all' && a.operateur_id !== historiqueFiltre.operateur) return false;
+    if (historiqueFiltre.type !== 'all' && a.type !== historiqueFiltre.type) return false;
+    if (historiqueFiltre.date && (!a.timestamp || !a.timestamp.startsWith(historiqueFiltre.date))) return false;
+    return true;
+  }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   // Centre de la carte (France)
   const defaultCenter = [46.603354, 1.888334];
+
+  // Références pour détecter les nouvelles urgences/anomalies/checklists
+  const prevUrgences = useRef([]);
+  const prevAnomalies = useRef([]);
+  const prevChecklists = useRef([]);
+  const notifiedChecklistsRef = useRef({});
+
+  // Toast pour nouvelle urgence
+  useEffect(() => {
+    if (prevUrgences.current.length && urgences.length > prevUrgences.current.length) {
+      const newUrgence = urgences.find(u => !prevUrgences.current.some(pu => pu.id === u.id));
+      if (newUrgence) {
+        toast.error(`🚨 URGENCE signalée par ${newUrgence.operateur_nom || newUrgence.operateur_id || 'un opérateur'} !`, { autoClose: 6000 });
+      }
+    }
+    prevUrgences.current = urgences;
+  }, [urgences]);
+
+  // Toast pour nouvelle anomalie
+  useEffect(() => {
+    if (prevAnomalies.current.length && anomalies.length > prevAnomalies.current.length) {
+      const newAnomalie = anomalies.find(a => !prevAnomalies.current.some(pa => pa.id === a.id));
+      if (newAnomalie) {
+        toast.warn(`❗ Nouvelle anomalie détectée par ${newAnomalie.operateur_nom || newAnomalie.operateur_id || 'un opérateur'} !`, { autoClose: 6000 });
+      }
+    }
+    prevAnomalies.current = anomalies;
+  }, [anomalies]);
+
+  // Toast checklist manquante (une seule fois par opérateur et par jour)
+  useEffect(() => {
+    if (operateursLive.length && checklists.length) {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      operateursLive.forEach(op => {
+        const hasChecklist = checklists.some(cl => cl.operateur_id === op.operateur_id && cl.timestamp && cl.timestamp.startsWith(today));
+        const key = `${op.operateur_id}_${today}`;
+        if (!hasChecklist && !notifiedChecklistsRef.current[key]) {
+          toast.info(`⚠️ Checklist manquante pour ${op.nom || op.operateur_id} !`, { autoClose: 8000 });
+          notifiedChecklistsRef.current[key] = true;
+        }
+        // Si la checklist est complétée, on peut réinitialiser la notification pour ce jour
+        if (hasChecklist && notifiedChecklistsRef.current[key]) {
+          delete notifiedChecklistsRef.current[key];
+        }
+      });
+    }
+    prevChecklists.current = checklists;
+  }, [checklists, operateursLive]);
 
   useEffect(() => {
     setLoading(true);
@@ -117,7 +180,7 @@ const Dashboard = () => {
   }, []);
 
   const renderCarte = () => (
-    <div className="carte-section">
+    <div className="carte-section" style={{ position: 'relative' }}>
       <div className="carte-header">
         <h2>🗺️ Carte des Opérateurs ENCO</h2>
         <div className="carte-controls">
@@ -210,145 +273,111 @@ const Dashboard = () => {
           </Marker>
         ))}
       </MapContainer>
-      
-      {/* Légende de la carte */}
-      <div className="map-legend" style={{
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        background: 'white',
-        padding: '15px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        zIndex: 1000
-      }}>
-        <h4 style={{margin: '0 0 10px 0', fontSize: '14px'}}>Légende</h4>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: '#28a745',
-            border: '2px solid white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-          }}></div>
-          <span style={{fontSize: '12px'}}>En poste</span>
-        </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: '#dc3545',
-            border: '2px solid white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-          }}></div>
-          <span style={{fontSize: '12px'}}>Fin de poste</span>
-        </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px'}}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: '#ffc107',
-            border: '2px solid white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '8px'
-          }}>⚠️</div>
-          <span style={{fontSize: '12px'}}>Alerte</span>
-        </div>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            backgroundColor: '#dc3545',
-            border: '2px solid white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '8px'
-          }}>🚨</div>
-          <span style={{fontSize: '12px'}}>Urgence</span>
-        </div>
+      {/* Légende overlay dans la carte */}
+      <div className="map-legend-overlay">
+        <b>Légende</b>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 4px 0' }}><span style={{ width: 14, height: 14, borderRadius: '50%', background: '#28a745', display: 'inline-block', border: '2px solid #fff' }}></span> <span>En poste</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}><span style={{ width: 14, height: 14, borderRadius: '50%', background: '#dc3545', display: 'inline-block', border: '2px solid #fff' }}></span> <span>Fin de poste</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}><span style={{ width: 14, height: 14, borderRadius: '50%', background: '#ffc107', display: 'inline-block', border: '2px solid #fff' }}></span> <span>Alerte</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}><span style={{ width: 14, height: 14, borderRadius: '50%', background: '#e74c3c', display: 'inline-block', border: '2px solid #fff' }}></span> <span>Urgence</span></div>
       </div>
     </div>
   );
 
-  const renderHistorique = () => (
-    <div className="historique-section">
-      <h2>📊 Historique des Actions</h2>
-      <TimelineActions />
-      <div className="historique-content">
-        <div className="filters">
-          <select defaultValue="all">
-            <option value="all">Tous les opérateurs</option>
-            {positions.map(pos => (
-              <option key={pos.operateur_id} value={pos.operateur_id}>{pos.nom}</option>
-            ))}
-          </select>
-          <input type="date" />
-          <button>🔍 Filtrer</button>
-        </div>
-        <div className="historique-list">
-          {loading ? (
-            <div>Chargement…</div>
-          ) : positions.length === 0 ? (
-            <div>Aucune action enregistrée</div>
-          ) : positions.map((pos, index) => (
-            <div key={index} className="historique-item">
-              <div className="item-icon">
-                {pos.type === 'prise_de_poste' ? '🟢' : '🔴'}
-              </div>
-              <div className="item-content">
-                <h4>{pos.nom}</h4>
-                <p>{pos.type === 'prise_de_poste' ? 'Prise de poste' : 'Fin de poste'}</p>
-                <small>{new Date(pos.timestamp).toLocaleString('fr-FR')}</small>
-              </div>
-              <div className="item-actions">
-                <button onClick={() => setSelectedAction(pos)}>📋 Détails</button>
-                <button>🗺️ Voir sur carte</button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Modale de détail d'action */}
-        {selectedAction && (
-          <div className="modal-overlay" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setSelectedAction(null)}>
-            <div className="modal-content" style={{ background:'#fff', borderRadius:12, padding:32, minWidth:340, minHeight:180, boxShadow:'0 2px 16px rgba(0,0,0,0.15)', position:'relative' }} onClick={e => e.stopPropagation()}>
-              <button style={{ position:'absolute', top:8, right:12, background:'none', border:'none', fontSize:22, cursor:'pointer' }} onClick={() => setSelectedAction(null)}>×</button>
-              <h2 style={{marginBottom:8}}>{selectedAction.nom || selectedAction.operateur_id}</h2>
-              <div style={{marginBottom:8}}><b>Type d'action :</b> {selectedAction.type === 'prise_de_poste' ? 'Prise de poste' : selectedAction.type === 'fin' ? 'Fin de poste' : selectedAction.type || 'Action'}</div>
-              <div style={{marginBottom:8}}><b>Date/heure :</b> {selectedAction.timestamp && new Date(selectedAction.timestamp).toLocaleString('fr-FR')}</div>
-              {selectedAction.description && <div style={{marginBottom:8}}><b>Message :</b> {selectedAction.description}</div>}
-              {selectedAction.photoUrl && <div style={{marginBottom:8}}><img src={selectedAction.photoUrl} alt="photo action" style={{maxWidth:180, borderRadius:8, border:'1px solid #eee'}} /></div>}
-              {selectedAction.latitude && selectedAction.longitude && (
-                <div style={{ width: 220, height: 140, margin: '12px 0', borderRadius: 8, overflow: 'hidden', border: '1px solid #eee' }}>
-                  <iframe
-                    title="Mini-carte"
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    style={{ border:0 }}
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedAction.longitude-0.001}%2C${selectedAction.latitude-0.001}%2C${selectedAction.longitude+0.001}%2C${selectedAction.latitude+0.001}&layer=mapnik&marker=${selectedAction.latitude}%2C${selectedAction.longitude}`}
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              )}
-              <div style={{marginTop:12, color:'#888', fontSize:13}}>
-                {/* Affiche tout autre détail utile ici */}
-                ID: {selectedAction.operateur_id || selectedAction.id}
-              </div>
-            </div>
+  const renderHistorique = () => {
+    // Regroupement par date pour affichage métier
+    const actionsByDate = {};
+    filteredActions.forEach(action => {
+      const date = action.timestamp ? new Date(action.timestamp).toLocaleDateString('fr-FR') : 'Date inconnue';
+      if (!actionsByDate[date]) actionsByDate[date] = [];
+      actionsByDate[date].push(action);
+    });
+    return (
+      <div className="historique-section">
+        <h2>📊 Historique des Actions</h2>
+        {/* Un seul bloc de filtres, en haut */}
+        <div className="historique-content">
+          <div className="filters" style={{ marginBottom: 24, display: 'flex', gap: 12, alignItems: 'center' }}>
+            <select value={historiqueFiltre.operateur} onChange={e => setHistoriqueFiltre(f => ({ ...f, operateur: e.target.value }))}>
+              <option value="all">Tous les opérateurs</option>
+              {positions.map(pos => (
+                <option key={pos.operateur_id} value={pos.operateur_id}>{pos.nom}</option>
+              ))}
+            </select>
+            <select value={historiqueFiltre.type} onChange={e => setHistoriqueFiltre(f => ({ ...f, type: e.target.value }))}>
+              <option value="all">Tous types</option>
+              <option value="prise_de_poste">Prise de poste</option>
+              <option value="fin">Fin de poste</option>
+              <option value="anomalie">Anomalie</option>
+              <option value="urgence">Urgence</option>
+              <option value="checklist">Checklist</option>
+            </select>
+            <input type="date" value={historiqueFiltre.date} onChange={e => setHistoriqueFiltre(f => ({ ...f, date: e.target.value }))} />
+            <button onClick={() => setHistoriqueFiltre({ operateur: 'all', type: 'all', date: '' })}>Réinitialiser</button>
           </div>
-        )}
+          <div className="historique-list" style={{ marginTop: 16 }}>
+            {loading ? (
+              <div>Chargement…</div>
+            ) : filteredActions.length === 0 ? (
+              <div>Aucune action enregistrée</div>
+            ) : (
+              Object.entries(actionsByDate).map(([date, actions], idx) => (
+                <div key={date} style={{marginBottom:32}}>
+                  <div style={{fontWeight:700, color:'#007bff', marginBottom:8, fontSize:17}}>{date}</div>
+                  {actions.map((action, index) => (
+                    <div key={index} className="historique-item" style={{ display: 'flex', alignItems: 'center', gap: 16, background: index%2===0 ? '#f8f9fa' : '#fff', borderRadius: 8, marginBottom: 8, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                      <div style={{ fontSize: 22 }}>
+                        {action.type === 'prise_de_poste' ? '🟢' : action.type === 'fin' ? '🔴' : action.type === 'anomalie' ? '🚨' : action.type === 'urgence' ? '🚨' : action.type === 'checklist' ? '✅' : '🕒'}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600 }}>{action.nom || action.operateur_id}</div>
+                        <div style={{ color: '#888', fontSize: 14 }}>{action.type === 'prise_de_poste' ? 'Prise de poste' : action.type === 'fin' ? 'Fin de poste' : action.type.charAt(0).toUpperCase() + action.type.slice(1)}</div>
+                        <div style={{ fontSize: 13 }}>{action.timestamp && new Date(action.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                        {action.description && <div style={{ fontSize: 13, color: '#333', marginTop: 4 }}>{action.description}</div>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => setSelectedAction(action)} style={{ background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, padding: '4px 12px', cursor: 'pointer' }}>📋 Détails</button>
+                        <button style={{ background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, padding: '4px 12px', cursor: 'pointer' }}>🗺️ Voir sur carte</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+          {/* Modale de détail d'action (inchangée) */}
+          {selectedAction && (
+            <div className="modal-overlay" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setSelectedAction(null)}>
+              <div className="modal-content" style={{ background:'#fff', borderRadius:12, padding:32, minWidth:340, minHeight:180, boxShadow:'0 2px 16px rgba(0,0,0,0.15)', position:'relative' }} onClick={e => e.stopPropagation()}>
+                <button style={{ position:'absolute', top:8, right:12, background:'none', border:'none', fontSize:22, cursor:'pointer' }} onClick={() => setSelectedAction(null)}>×</button>
+                <h2 style={{marginBottom:8}}>{selectedAction.nom || selectedAction.operateur_id}</h2>
+                <div style={{marginBottom:8}}><b>Type d'action :</b> {selectedAction.type === 'prise_de_poste' ? 'Prise de poste' : selectedAction.type === 'fin' ? 'Fin de poste' : selectedAction.type.charAt(0).toUpperCase() + selectedAction.type.slice(1)}</div>
+                <div style={{marginBottom:8}}><b>Date/heure :</b> {selectedAction.timestamp && new Date(selectedAction.timestamp).toLocaleString('fr-FR')}</div>
+                {selectedAction.description && <div style={{marginBottom:8}}><b>Message :</b> {selectedAction.description}</div>}
+                {selectedAction.photoUrl && <div style={{marginBottom:8}}><img src={selectedAction.photoUrl} alt="photo action" style={{maxWidth:180, borderRadius:8, border:'1px solid #eee'}} /></div>}
+                {selectedAction.latitude && selectedAction.longitude && (
+                  <div style={{ width: 220, height: 140, margin: '12px 0', borderRadius: 8, overflow: 'hidden', border: '1px solid #eee' }}>
+                    <iframe
+                      title="Mini-carte"
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      style={{ border:0 }}
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedAction.longitude-0.001}%2C${selectedAction.latitude-0.001}%2C${selectedAction.longitude+0.001}%2C${selectedAction.latitude+0.001}&layer=mapnik&marker=${selectedAction.latitude}%2C${selectedAction.longitude}`}
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                )}
+                <div style={{marginTop:12, color:'#888', fontSize:13}}>
+                  ID: {selectedAction.operateur_id || selectedAction.id}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderDocuments = () => (
     <div className="documents-section">
@@ -391,7 +420,7 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="dashboard">
+    <div className="dashboard" style={{ display: 'flex', minHeight: '100vh', width: '100vw', background: '#f5f6fa' }}>
       <div className="sidebar">
         <div className="logo-section">
           <img src="/photos/logo-enco.png" alt="ENCO Logo" className="logo" />
@@ -436,10 +465,13 @@ const Dashboard = () => {
             📄 Bons d'attachement
           </button>
           <button 
-            className={`nav-btn ${activeTab === 'outils' ? 'active' : ''}`}
+            className={`nav-btn urgences ${activeTab === 'outils' ? 'active' : ''}`}
             onClick={() => setActiveTab('outils')}
+            style={{ position: 'relative' }}
           >
             🗺️ Outils ferroviaires
+            {/* Badge rouge dynamique sur Urgences */}
+            {urgences.length > 0 && <span className="badge">{urgences.length}</span>}
           </button>
           <button 
             className={`nav-btn ${activeTab === 'planning' ? 'active' : ''}`}
@@ -451,7 +483,7 @@ const Dashboard = () => {
         </nav>
       </div>
 
-      <div className="main-content">
+      <div className="main-content" style={{ flex: 1, width: '100%', maxWidth: '100vw', padding: 0 }}>
         <header className="dashboard-header">
           <h2>{activeTab === 'carte' ? 'Carte des Opérateurs' : 
                activeTab === 'historique' ? 'Historique' :
@@ -479,7 +511,7 @@ const Dashboard = () => {
           </div>
         </header>
 
-        <main className="content-area">
+        <main className="content-area" style={{ width: '100%', maxWidth: '100vw', margin: 0, padding: 0 }}>
           {loading && <div className="loading">🔄 Chargement...</div>}
           {error && <div className="error">❌ {error}</div>}
           

@@ -39,9 +39,11 @@ async def handle_outils_ferroviaires(update: Update, context: ContextTypes.DEFAU
     elif text == "📋 Rapport technique":
         await start_rapport_wizard(update, context)
     elif text == "Menu principal":
-        await start_outils_ferroviaires(update, context)
+        from handlers.menu import start
+        await start(update, context)
     else:
-        await start_outils_ferroviaires(update, context)
+        from handlers.menu import start
+        await start(update, context)
 
 async def start_geoportail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(

@@ -48,7 +48,11 @@ const StatsCharts = () => {
       const ops = {};
       snap.docs.forEach(doc => {
         const d = doc.data();
-        const nom = d.nom || d.operateur_id;
+        let nom = d.nom && typeof d.nom === 'string' ? d.nom.trim() : '';
+        if (!nom || nom.toLowerCase().includes('ferroviaire') || nom.toLowerCase().includes('formation') || nom.toLowerCase().includes('undefined') || nom.length < 2) {
+          nom = d.operateur_id || d.telegram_id || 'Inconnu';
+        }
+        if (!nom || nom === 'undefined' || nom === 'Inconnu') return; // On ne garde pas les barres fantômes
         ops[nom] = (ops[nom] || 0) + 1;
       });
       setOperateursData(Object.entries(ops).map(([name, utilisations]) => ({ name, utilisations })));
@@ -122,7 +126,7 @@ const StatsCharts = () => {
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={operateursData} layout="vertical">
             <XAxis type="number" />
-            <YAxis dataKey="name" type="category" />
+            <YAxis dataKey="name" type="category" tick={{ fontSize: 14, width: 120, overflow: 'visible' }} />
             <Tooltip />
             <Bar dataKey="utilisations" fill="#28a745" />
           </BarChart>

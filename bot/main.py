@@ -176,7 +176,7 @@ def main():
     # Ajouter les handlers de photos et voix
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.VOICE, handle_voice))
-    
+
     # Ajouter le handler de texte général en dernier
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 
@@ -191,4 +191,4 @@ def main():
     )
 
 if __name__ == "__main__":
-    main()
+        main()

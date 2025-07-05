@@ -20,6 +20,12 @@ const typeToLabel = {
   'urgence': 'Urgence',
 };
 
+const isCritique = desc => {
+  if (!desc) return false;
+  const d = desc.toLowerCase();
+  return d.includes('pneu') || d.includes('fuite') || d.includes('frein') || d.includes('huile') || d.includes('moteur') || d.includes('urgence');
+};
+
 const TimelineActions = () => {
   const { positions, anomalies, urgences, checklists } = useOperateursLive();
   const actions = [
@@ -38,28 +44,84 @@ const TimelineActions = () => {
 
   return (
     <div className="timeline-actions">
-      <div className="timeline-resume" style={{display:'flex', gap:16, marginBottom:16, flexWrap:'wrap'}}>
-        <span>🟢 Prises de poste : <b>{resume['prise_de_poste'] || 0}</b></span>
-        <span>🔴 Fins de poste : <b>{resume['fin'] || 0}</b></span>
-        <span>🚨 Urgences : <b>{resume['urgence'] || 0}</b></span>
-        <span>🚨 Anomalies : <b>{resume['anomalie'] || 0}</b></span>
-        <span>✅ Checklists : <b>{resume['checklist'] || 0}</b></span>
-      </div>
       {sorted.map((item, idx) => (
-        <div className="timeline-item" key={idx}>
-          <div className="timeline-icon">{typeToIcon[item.type] || '🕒'}</div>
-          <div className="timeline-content">
-            <div className="timeline-time">{new Date(item.timestamp).toLocaleTimeString('fr-FR')}</div>
-            <div className="timeline-user">{item.nom || item.operateur_id}</div>
-            <div className="timeline-action">
-              <b>{typeToLabel[item.type] || item.type}</b>
-              {item.type === 'anomalie' && <> : {item.description || <span style={{color:'#888'}}>Non renseignée</span>}</>}
-              {item.type === 'urgence' && <> : {item.description || <span style={{color:'#888'}}>Non renseignée</span>}</>}
-              {item.type === 'checklist' && <> : {item.statut || 'Checklist complétée'}</>}
-              {item.type === 'prise_de_poste' && item.description && <> : {item.description}</>}
-              {item.type === 'fin' && item.description && <> : {item.description}</>}
+        <div
+          className="timeline-item"
+          key={idx}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 18,
+            background: idx % 2 === 0 ? '#f8f9fa' : '#fff',
+            borderRadius: 14,
+            marginBottom: 18,
+            padding: '18px 22px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+            minHeight: 70,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ fontSize: 28, marginRight: 8, minWidth: 38, textAlign: 'center' }}>
+            {typeToIcon[item.type] || '🕒'}
+          </div>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 2 }}>
+              <span style={{ fontWeight: 700, color: '#007bff', fontSize: 17, minWidth: 60 }}>{item.timestamp ? new Date(item.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+              <span style={{ fontWeight: 600, fontSize: 16 }}>{item.nom || item.operateur_id}</span>
+              {item.type === 'anomalie' ? (
+                <>
+                  <span style={{
+                    background: '#ffc10722', color: '#ffc107', borderRadius: 8, padding: '2px 12px', fontWeight: 600, fontSize: 14, marginLeft: 4, minWidth: 80, textAlign: 'center',
+                  }}>Anomalie</span>
+                  {item.description && (
+                    <>
+                      <span style={{
+                        background: isCritique(item.description) ? '#fd7e14' : '#eee',
+                        color: isCritique(item.description) ? '#fff' : '#888',
+                        borderRadius: 8,
+                        padding: '2px 12px',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        marginLeft: 8,
+                        textAlign: 'center',
+                        boxShadow: isCritique(item.description) ? '0 0 6px #fd7e14' : 'none',
+                      }}>{item.description}</span>
+                      {(!item.statut || !['traitée', 'traité', 'résolue', 'résolu'].includes(item.statut.toLowerCase())) && (
+                        <span style={{
+                          background: '#e74c3c',
+                          color: '#fff',
+                          borderRadius: 8,
+                          padding: '2px 10px',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          marginLeft: 8,
+                          textAlign: 'center',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          boxShadow: '0 0 6px #e74c3c55',
+                        }}>
+                          ⚠️ À traiter
+                        </span>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <span style={{
+                  background: item.type === 'prise_de_poste' ? '#28a74522' : item.type === 'fin' ? '#dc354522' : item.type === 'urgence' ? '#e74c3c22' : item.type === 'checklist' ? '#20c99722' : '#eee',
+                  color: item.type === 'prise_de_poste' ? '#28a745' : item.type === 'fin' ? '#dc3545' : item.type === 'urgence' ? '#e74c3c' : item.type === 'checklist' ? '#20c997' : '#888',
+                  borderRadius: 8,
+                  padding: '2px 12px',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  marginLeft: 4,
+                  minWidth: 80,
+                  textAlign: 'center',
+                }}>{typeToLabel[item.type] || item.type}</span>
+              )}
             </div>
-            {item.statut && <div className="timeline-status">Statut : {item.statut}</div>}
+            {item.type !== 'anomalie' && item.description && <div style={{ fontSize: 14, color: '#333', marginTop: 2 }}>{item.description}</div>}
+            {item.statut && <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Statut : {item.statut}</div>}
           </div>
         </div>
       ))}

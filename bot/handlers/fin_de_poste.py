@@ -38,12 +38,17 @@ async def confirm_fin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "type": "fin_de_poste",
         "photo_file_id": context.user_data.get('photo')
     })
-    await update.message.reply_text("✅ Fin de poste enregistrée et opérateur retiré de la carte !", reply_markup=ReplyKeyboardMarkup(
+    await update.message.reply_text(
+        "\u2705 Fin de poste enregistr\u00e9e et op\u00e9rateur retir\u00e9 de la carte !", reply_markup=ReplyKeyboardMarkup(
         [
             ["Menu principal", "Commencer ma prise de poste"],
             ["Envoyer photo en cours de mission", "Voir mes stats"]
         ], resize_keyboard=True
     ))
+    # Ajout : gestion du retour menu principal
+    if update.message.text == "Menu principal":
+        from handlers.menu import start
+        await start(update, context)
     await update.message.reply_text("✅ Poste terminé. Merci pour ton travail aujourd’hui 💪\nTon bon est bien enregistré. À demain !")
     return ConversationHandler.END
 

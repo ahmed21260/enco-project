@@ -121,12 +121,12 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
     numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
     
     await update.message.reply_text(
-        f"✅ **URGENCE ENREGISTRÉE ET TRANSMISE !**\n\n"
-        f"🚨 L'encadrement a été notifié immédiatement.\n"
-        f"📍 Ta position a été transmise.\n\n"
-        f"📞 **Numéros d'urgence :**\n"
+        f"\u2705 **URGENCE ENREGISTR\u00c9E ET TRANSMISE !**\n\n"
+        f"\ud83d\udea8 L'encadrement a \u00e9t\u00e9 notifi\u00e9 imm\u00e9diatement.\n"
+        f"\ud83d\udccd Ta position a \u00e9t\u00e9 transmise.\n\n"
+        f"\ud83d\udcde **Num\u00e9ros d'urgence :**\n"
         f"{numeros_urgence}\n\n"
-        f"🔄 Reste en contact avec l'encadrement.",
+        f"\ud83d\udd04 Reste en contact avec l'encadrement.",
         reply_markup=ReplyKeyboardMarkup(
             [
                 ["Menu principal", "Signaler une autre urgence"],
@@ -134,6 +134,10 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ], resize_keyboard=True
         )
     )
+    # Ajout : gestion du retour menu principal
+    if update.message.text == "Menu principal":
+        from handlers.menu import start
+        await start(update, context)
     return ConversationHandler.END
 
 def get_urgence_wizard_handler():

@@ -56,7 +56,7 @@ const BonsAttachement = () => {
   return (
     <div className="bons-container">
       <div className="bons-header">
-        <h2>📄 Bons d'attachement</h2>
+      <h2>📄 Bons d'attachement</h2>
         <div className="stats">
           <span>📋 {bons.length} bon(s) enregistré(s)</span>
         </div>
@@ -73,7 +73,7 @@ const BonsAttachement = () => {
           bons.map((bon) => (
             <div key={bon.id} className="bon-card">
               <div className="bon-header">
-                <div className="bon-info">
+            <div className="bon-info">
                   <h3>{getFileIcon(bon.file_type)} {bon.numero}</h3>
                   <p className="bon-operator">👤 {bon.operatorName}</p>
                   <p className="bon-date">📅 {formatDate(bon.timestamp)}</p>

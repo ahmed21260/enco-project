@@ -18,6 +18,31 @@ const formatTime = (iso) => {
   return d.toLocaleTimeString('fr-FR');
 };
 
+// Ajout d'une fonction utilitaire pour récupérer l'ID opérateur universel
+const getOperateurId = (photo) => photo.operateur_id || photo.operatorId || photo.telegram_id;
+const getPhotoUrl = (photo) => photo.url || photo.urlPhoto;
+
+// Ajout d'un composant pour la galerie d'un opérateur donné
+export const GaleriePhotosOperateur = ({ operateurId, nom }) => {
+  const [data, setData] = useState([]);
+  useEffect(() => {
+    const unsubPhotos = onSnapshot(collection(db, 'photos'), snap => setData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+    return () => unsubPhotos();
+  }, []);
+  const photos = data.filter(photo => String(getOperateurId(photo)) === String(operateurId));
+  return (
+    <div>
+      <h3>Photos de {nom}</h3>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {photos.length === 0 && <div>Aucune photo trouvée pour cet opérateur.</div>}
+        {photos.map((photo, idx) => (
+          <img key={idx} src={getPhotoUrl(photo) || 'https://via.placeholder.com/80x80?text=Photo'} alt="photo" style={{ maxWidth: 80, maxHeight: 80, borderRadius: 6, marginRight: 6, cursor: 'pointer' }} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const GaleriePhotos = () => {
   const [data, setData] = useState([]);
   const [qrData, setQrData] = useState([]);
@@ -40,15 +65,17 @@ const GaleriePhotos = () => {
   // Regrouper par opérateur puis par jour
   const photosParOperateur = {};
   data.forEach(photo => {
-    if (!photo.operateur_id) return;
-    if (!photosParOperateur[photo.operateur_id]) {
-      photosParOperateur[photo.operateur_id] = { nom: photo.nom, jours: {} };
+    // Accepte operateur_id ou operatorId
+    const opId = getOperateurId(photo);
+    if (!opId) return;
+    if (!photosParOperateur[opId]) {
+      photosParOperateur[opId] = { nom: photo.nom, jours: {} };
     }
     const jour = formatDate(photo.timestamp);
-    if (!photosParOperateur[photo.operateur_id].jours[jour]) {
-      photosParOperateur[photo.operateur_id].jours[jour] = [];
+    if (!photosParOperateur[opId].jours[jour]) {
+      photosParOperateur[opId].jours[jour] = [];
     }
-    photosParOperateur[photo.operateur_id].jours[jour].push(photo);
+    photosParOperateur[opId].jours[jour].push(photo);
   });
 
   // Regrouper les scans QR par opérateur puis par jour
@@ -110,7 +137,7 @@ const GaleriePhotos = () => {
                   <div><b>Machine utilisée :</b> {qrByPrise[prise.id]?.qr_content || '—'}</div>
                   <div><b>Photos :</b>
                     {(photosByPrise[prise.id] || []).map((photo, pidx) => (
-                      <img key={pidx} src={photo.url} alt="photo" style={{ maxWidth: 80, maxHeight: 80, borderRadius: 6, marginRight: 6, cursor: 'pointer' }} onClick={() => setLightbox(photo.url)} />
+                      <img key={pidx} src={getPhotoUrl(photo)} alt="photo" style={{ maxWidth: 80, maxHeight: 80, borderRadius: 6, marginRight: 6, cursor: 'pointer' }} onClick={() => setLightbox(getPhotoUrl(photo))} />
                     ))}
                   </div>
                 </div>
