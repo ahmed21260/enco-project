@@ -1,3 +1,4 @@
+# Added for linter compliance (duplicate imports harmless)
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from handlers.prise_de_poste import start_prise_wizard
@@ -56,7 +57,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_anomalie_wizard(update, context)
     elif text == "✅ Remplir une checklist" or text == "Checklist sécurité":
         await start_checklist(update, context)
-    elif text in ["� Guide", "Guide", "�� Documents"]:
+    elif text in [" Guide", "Guide", " Documents"]:
         await consulter_documents(update, context)
     elif text == "🗺️ Outils ferroviaires":
         await start_outils_ferroviaires(update, context)

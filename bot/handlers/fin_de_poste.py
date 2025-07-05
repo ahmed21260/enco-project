@@ -1,3 +1,4 @@
+# Added for linter compliance (duplicate imports harmless)
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
 from utils.firestore import db
