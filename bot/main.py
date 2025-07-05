@@ -158,7 +158,9 @@ def main():
     # Ajouter les handlers de commandes
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("test_rappel", test_rappel))
+    # Garder /docs pour l’administrateur, mais ajouter /guide pour tout le monde
     application.add_handler(CommandHandler("docs", lambda u, c: consulter_documents(u, c) if u.effective_user.id == ADMIN_ID else u.message.reply_text("Accès réservé à l'administrateur.")))
+    application.add_handler(CommandHandler("guide", consulter_documents))
     application.add_handler(CommandHandler("historique", lambda u, c: afficher_historique(u, c) if u.effective_user.id == ADMIN_ID else u.message.reply_text("Accès réservé à l'administrateur.")))
     
     # Ajouter les handlers spécifiques

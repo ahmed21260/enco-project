@@ -1,3 +1,4 @@
+# Added for linter compliance (duplicate imports harmless)
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from handlers.prise_de_poste import start_prise_wizard
@@ -21,9 +22,10 @@ from handlers.photo import start_photo
 import requests
 
 MENU_KEYBOARD = [
-    ["📌 Prise de poste", "📷 Envoyer une photo"],
-    ["📄 Bon d'attachement", "🛑 URGENCE / INCIDENT"],
-    ["🔧 Déclarer une panne", "🗺️ Outils ferroviaires"],
+    ["📌 Prise de poste", "Fin de poste"],
+    ["📷 Envoyer une photo", "📄 Bon d'attachement"],
+    ["🛑 URGENCE / INCIDENT", "🔧 Déclarer une panne"],
+    ["🗺️ Outils ferroviaires", "📘 Guide"],
     ["🗓️ Planning"]
 ]
 
@@ -45,9 +47,9 @@ async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text == "📌 Prendre mon poste":
+    if text in ["📌 Prendre mon poste", "📌 Prise de poste"]:
         await start_prise_wizard(update, context)
-    elif text == "Fin de poste / Bon papier" or text == "Fin de poste":
+    elif text in ["Fin de poste", "Fin de poste / Bon papier"]:
         await start_fin_wizard(update, context)
     elif text == "🚨 Déclarer une urgence" or text == "🛑 URGENCE / INCIDENT":
         await start_urgence_wizard(update, context)
@@ -55,7 +57,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_anomalie_wizard(update, context)
     elif text == "✅ Remplir une checklist" or text == "Checklist sécurité":
         await start_checklist(update, context)
-    elif text == "📄 Documents":
+    elif text in [" Guide", "Guide", " Documents"]:
         await consulter_documents(update, context)
     elif text == "🗺️ Outils ferroviaires":
         await start_outils_ferroviaires(update, context)
@@ -70,26 +72,8 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    welcome_text = (
-        "👋 *Bienvenue sur ENCO, l'outil des opérateurs ferroviaires !*\n\n"
-        "Voici ce que tu peux faire :\n"
-        "• 📌 *Prendre ton poste* (déclare ta présence et ta position)\n"
-        "• 🚨 *Déclarer une urgence* (incident grave, sécurité)\n"
-        "• 🛠️ *Déclarer une anomalie* (problème technique)\n"
-        "• ✅ *Remplir une checklist* (sécurité, matériel)\n"
-        "• 📄 *Consulter les documents* (règlement, procédures)\n\n"
-        "_Tout est synchronisé en temps réel avec le dashboard ENCO._"
-    )
-    keyboard = [
-        ["📌 Prendre mon poste", "🚨 Déclarer une urgence"],
-        ["🛠️ Déclarer une anomalie", "✅ Remplir une checklist"],
-        ["📄 Documents", "Menu principal"]
-    ]
-    await update.message.reply_text(
-        welcome_text,
-        parse_mode="Markdown",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    )
+    """Alias for /start and "Menu principal" button: display the unified main menu."""
+    await menu_principal(update, context)
 
 async def aide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
