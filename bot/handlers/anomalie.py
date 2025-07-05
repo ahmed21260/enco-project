@@ -206,4 +206,4 @@ def get_anomalie_wizard_handler():
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_anomalie)],
         },
         fallbacks=[]
-    ) 
+    )
