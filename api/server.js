@@ -276,32 +276,55 @@ app.post('/upload-bon-signe', upload.single('photo'), async (req, res) => {
 // --------------
 
 app.post('/webhook', async (req, res) => {
+  const startTs = Date.now();
   try {
-    const { input, metadata, source } = req.body || {};
-
-    // Sécurité : accepter uniquement la source attendue
-    if (source !== 'backend-agent') {
+    // Sécurité : header Source obligatoire
+    const sourceHeader = req.get('source') || req.get('Source') || '';
+    if (sourceHeader !== 'backend-agent') {
+      console.warn('🚫 Requête refusée – header Source manquant ou incorrect');
       return res.status(400).json({ error: 'Source non autorisée' });
     }
 
-    // Construction du prompt dynamique
-    const prompt = `\nTu es un assistant expert ferroviaire pour le projet ENCO.\nVoici les données reçues :\n- Messages Telegram : ${JSON.stringify(metadata?.telegramMessages || [])}\n- Anomalies détectées : ${JSON.stringify(metadata?.anomalies || [])}\n- Pings géolocalisés : ${JSON.stringify(metadata?.pings || [])}\n- Données Firestore : ${JSON.stringify(metadata?.firestoreData || {})}\n- Logique métier Highway : ${metadata?.highwayLogic || ''}\n\nAnalyse ces données, puis :\n1) Classe et priorise les anomalies.\n2) Propose un résumé clair et structuré.\n3) Donne une recommandation/action rapide.\n4) Effectue une mini recherche (synthèse) sur l'anomalie la plus urgente pour aider le technicien qui la reçoit.\n\nRéponds en JSON avec ces champs :\n{\n  "priorite": "Critique|Moyenne|Basse",\n  "resume": "...",\n  "action": "...",\n  "miniRecherche": "Texte explicatif pour aider le technicien"\n}`;
+    const { input = {}, metadata = {} } = req.body || {};
+
+    // Construction du prompt dynamique pour l'IA
+    const prompt = `Tu es un assistant expert ferroviaire pour le projet ENCO.\nVoici les données reçues :\n- Messages Telegram : ${JSON.stringify(metadata.telegramMessages || [])}\n- Anomalies détectées : ${JSON.stringify(metadata.anomalies || [])}\n- Pings géolocalisés : ${JSON.stringify(metadata.pings || [])}\n- Données Firestore : ${JSON.stringify(metadata.firestoreData || {})}\n- Logique métier Highway : ${metadata.highwayLogic || ''}\n\nAnalyse ces données, puis :\n1) Classe et priorise les anomalies.\n2) Propose un résumé clair et structuré.\n3) Donne une recommandation/action rapide.\n4) Effectue une mini recherche (synthèse) sur l'anomalie la plus urgente pour aider le technicien qui la reçoit.\n\nRéponds en JSON avec ces champs :\n{\n  \"priorite\": \"Critique|Moyenne|Basse\",\n  \"resume\": \"...\",\n  \"action\": \"...\",\n  \"miniRecherche\": \"Texte explicatif pour aider le technicien\"\n}`;
 
     // Appel OpenAI
-    const openaiResponse = await callOpenAIAPI(prompt);
+    const openaiResponse = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      store: true,
+      temperature: 0.3,
+      messages: [
+        { role: 'user', content: prompt }
+      ]
+    });
 
-    // Tentative de parse JSON, sinon renvoyer brut
+    const content = openaiResponse.choices?.[0]?.message?.content || '';
+
+    // Tentative de parse JSON, sinon fallback
     let parsed;
     try {
-      parsed = JSON.parse(openaiResponse);
-    } catch (e) {
-      parsed = { raw: openaiResponse };
+      parsed = JSON.parse(content);
+      // Contrôle minimal des champs
+      if (!parsed.priorite || !parsed.resume) {
+        throw new Error('Champs essentiels manquants');
+      }
+    } catch (err) {
+      console.warn('⚠️  Réponse IA non JSON ou incomplète, fallback activé');
+      parsed = {
+        raw: content,
+        priorite: 'Indéterminée',
+        action: 'Revue humaine nécessaire',
+        miniRecherche: 'Veuillez consulter un expert.'
+      };
     }
 
+    console.log('✅ Analyse IA complétée en', Date.now() - startTs, 'ms');
     return res.json({ response: parsed });
   } catch (err) {
     console.error('❌ Erreur /webhook :', err);
-    return res.status(500).json({ error: 'Erreur interne serveur' });
+    return res.status(500).json({ error: 'Erreur interne serveur', details: err.message });
   }
 });
 
@@ -314,14 +337,16 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
     const publicUrl = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
     console.log(`\n🚀 API serveur démarré sur ${publicUrl}`);
-    console.log(`📡 Endpoints disponibles:`);
-    console.log(`   - GET /api/positions (toutes les positions)`);
-    console.log(`   - GET /api/positions/latest (dernières positions par opérateur)`);
-    console.log(`   - GET /api/photos (liste des photos Telegram uploadées)`);
-    console.log(`   - GET /api/anomalies (liste des anomalies)`);
-    console.log(`   - GET /api/urgences (liste des urgences)`);
-    console.log(`   - GET /api/operateurs (liste des opérateurs)`);
-    console.log(`   - POST /prise-poste`);
-    console.log(`   - POST /upload-photo`);
-    console.log(`   - POST /upload-bon-signe`);
-}); 
+    console.log(`📡 Endpoints disponibles :
+   - GET /api/positions
+   - GET /api/positions/latest
+   - GET /api/photos
+   - GET /api/anomalies
+   - GET /api/urgences
+   - GET /api/operateurs
+   - POST /prise-poste
+   - POST /upload-photo
+   - POST /upload-bon-signe
+   - POST /webhook (IA)
+   - GET  /health`);
+});
