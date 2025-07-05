@@ -56,7 +56,8 @@ def get_fin_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("fin", start_fin_wizard),
-            MessageHandler(filters.Regex("^Fin de poste / Bon papier$"), start_fin_wizard)
+            MessageHandler(filters.Regex("^Fin de poste / Bon papier$"), start_fin_wizard),
+            MessageHandler(filters.Regex("^Fin de poste$"), start_fin_wizard)
         ],
         states={
             PHOTO: [MessageHandler(filters.PHOTO, receive_photo)],
