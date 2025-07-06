@@ -45,7 +45,7 @@ async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text == "📌 Prendre mon poste":
+    if text in ["📌 Prise de poste", "/prise de poste"]:
         await start_prise_wizard(update, context)
     elif text == "Fin de poste / Bon papier" or text == "Fin de poste":
         await start_fin_wizard(update, context)
