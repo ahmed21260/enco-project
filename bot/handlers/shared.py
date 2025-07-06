@@ -65,3 +65,19 @@ def build_ai_prompt(question: str, context: dict = None) -> str:
     if context:
         prompt += f"\n\nContexte : {context}"
     return prompt 
+
+async def menu_principal(update, context):
+    reply_markup = ReplyKeyboardMarkup(MENU_KEYBOARD, resize_keyboard=True)
+    await update.message.reply_text(
+        "👋 Bienvenue sur ENCO Bot !\n\n"
+        "Voici ce que tu peux faire :\n"
+        "📌 Prise de poste : démarre ta journée\n"
+        "🖼️ Envoyer une photo : signale un état ou une anomalie\n"
+        "🛑 URGENCE / INCIDENT : déclare une urgence immédiate\n"
+        "🔧 Déclarer une panne : signale une anomalie machine\n"
+        "📄 Bon d'attachement : envoie un bon d'attachement\n"
+        "🗺️ Outils ferroviaires : géoportail, règlements, procédures\n"
+        "🗓️ Planning, etc.\n\n"
+        "Utilise les boutons ci-dessous pour naviguer, ou tape /aide pour plus d'infos.",
+        reply_markup=reply_markup
+    ) 
