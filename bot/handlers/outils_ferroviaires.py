@@ -15,6 +15,8 @@ RAPPORT_TYPES = [
 ]
 
 async def start_outils_ferroviaires(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "🗺️ **OUTILS FERROVIAIRES ENCO**\n\n"
         "Sélectionne l'outil dont tu as besoin :",
@@ -24,8 +26,11 @@ async def start_outils_ferroviaires(update: Update, context: ContextTypes.DEFAUL
             ["📋 Rapport technique", "Menu principal"]
         ], resize_keyboard=True)
     )
+    return ConversationHandler.END
 
 async def handle_outils_ferroviaires(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     text = update.message.text
     
     if text == "📍 Géoportail SNCF":
@@ -46,6 +51,8 @@ async def handle_outils_ferroviaires(update: Update, context: ContextTypes.DEFAU
         await start(update, context)
 
 async def start_geoportail(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "📍 **GÉOPORTAIL SNCF**\n\n"
         "Envoie ta position GPS pour trouver le portail SNCF le plus proche :",
@@ -56,11 +63,16 @@ async def start_geoportail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def handle_geoportail_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     if not update.message.location:
         await update.message.reply_text("❗ Localisation obligatoire pour le géoportail.")
         return
     
     user = update.message.from_user
+    if not user:
+        await update.message.reply_text("❌ Erreur : utilisateur non trouvé.")
+        return
     loc = update.message.location
     
     # Coordonnées des portails SNCF (exemple - à adapter selon les vrais portails)
@@ -123,6 +135,8 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     return R * c
 
 async def show_reglement_securite(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "📘 **RÈGLEMENT SÉCURITÉ ENCO/SNCF**\n\n"
         "🔒 **Règles de sécurité ferroviaire :**\n"
@@ -143,6 +157,8 @@ async def show_reglement_securite(update: Update, context: ContextTypes.DEFAULT_
     )
 
 async def show_procedures_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "📄 **PROCÉDURES D'URGENCE**\n\n"
         "🚨 **Procédures disponibles :**\n"
@@ -164,6 +180,8 @@ async def show_procedures_urgence(update: Update, context: ContextTypes.DEFAULT_
     )
 
 async def show_fiche_chantier(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "📦 **FICHE CHANTIER**\n\n"
         "📋 **Dernière version disponible :**\n"
@@ -185,6 +203,8 @@ async def show_fiche_chantier(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # Wizard Rapport technique (intégré dans les outils)
 async def start_rapport_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "📋 **RAPPORT TECHNIQUE**\n\n"
         "Sélectionne le type de rapport :",
@@ -193,6 +213,10 @@ async def start_rapport_wizard(update: Update, context: ContextTypes.DEFAULT_TYP
     return TYPE_RAPPORT
 
 async def receive_type_rapport(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     context.user_data['type_rapport'] = update.message.text
     
     await update.message.reply_text(
@@ -207,6 +231,10 @@ async def receive_type_rapport(update: Update, context: ContextTypes.DEFAULT_TYP
     return DESCRIPTION
 
 async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     if update.message.text and update.message.text.lower() == 'skip':
         context.user_data['description'] = ''
     else:
@@ -218,6 +246,10 @@ async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE
     return PHOTO
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     if update.message.text and update.message.text.lower() == 'skip':
         context.user_data['photo_file_id'] = None
     elif update.message.photo:
@@ -241,11 +273,21 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CONFIRM
 
 async def confirm_rapport(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    if not update.message.text:
+        await update.message.reply_text("❌ Réponse invalide.")
+        return CONFIRM
     if update.message.text.lower() != "oui":
         await update.message.reply_text("❌ Rapport annulé.")
         return ConversationHandler.END
     
     user = update.message.from_user
+    if not user:
+        await update.message.reply_text("❌ Erreur : utilisateur non trouvé.")
+        return ConversationHandler.END
     
     # Données pour Firestore
     rapport_data = {
@@ -285,7 +327,7 @@ def get_outils_ferroviaires_handler():
         states={
             TYPE_RAPPORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type_rapport)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_description)],
-            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photo)],
+            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, receive_photo)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_rapport)],
         },
         fallbacks=[]

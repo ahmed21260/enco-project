@@ -14,6 +14,8 @@ RAPPORT_TYPES = [
 ]
 
 async def start_rapport_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "📋 **RAPPORT TECHNIQUE**\n\n"
         "Sélectionne le type de rapport :",
@@ -22,6 +24,10 @@ async def start_rapport_wizard(update: Update, context: ContextTypes.DEFAULT_TYP
     return TYPE_RAPPORT
 
 async def receive_type_rapport(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     context.user_data['type_rapport'] = update.message.text
     
     await update.message.reply_text(
@@ -36,6 +42,10 @@ async def receive_type_rapport(update: Update, context: ContextTypes.DEFAULT_TYP
     return DESCRIPTION
 
 async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     if update.message.text and update.message.text.lower() == 'skip':
         context.user_data['description'] = ''
     else:
@@ -47,6 +57,10 @@ async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE
     return PHOTO
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     if update.message.text and update.message.text.lower() == 'skip':
         context.user_data['photo_file_id'] = None
     elif update.message.photo:
@@ -70,11 +84,21 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CONFIRM
 
 async def confirm_rapport(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    if not update.message.text:
+        await update.message.reply_text("❌ Réponse invalide.")
+        return CONFIRM
     if update.message.text.lower() != "oui":
         await update.message.reply_text("❌ Rapport annulé.")
         return ConversationHandler.END
     
     user = update.message.from_user
+    if not user:
+        await update.message.reply_text("❌ Erreur : utilisateur non trouvé.")
+        return ConversationHandler.END
     
     # Données pour Firestore
     rapport_data = {
@@ -120,7 +144,7 @@ def get_rapport_wizard_handler():
         states={
             TYPE_RAPPORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type_rapport)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_description)],
-            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photo)],
+            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, receive_photo)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_rapport)],
         },
         fallbacks=[]

@@ -150,12 +150,14 @@ async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE
             "Aide demandée pour l'étape description d'anomalie.")
         await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
         return DESCRIPTION
+    
     # Si on vient de la sélection d'anomalie spécifique
     if context.user_data.get('type_anomalie') and not context.user_data.get('anomalie_specifique'):
         context.user_data['anomalie_specifique'] = update.message.text
-        await update.message.reply_text("📝 Ajoute des détails sur l'anomalie (optionnel, tape 'skip' pour passer) :")
+        # Passer directement à l'étape photo, pas rester dans DESCRIPTION
+        await update.message.reply_text("📸 Prends une photo de l'anomalie (obligatoire) :")
         logging.info(f"[ANOMALIE] Anomalie spécifique: {update.message.text} pour user {update.effective_user.id}")
-        return DESCRIPTION
+        return PHOTO
     
     # Sinon, c'est la description libre
     if update.message.text and update.message.text.lower() == 'skip':
@@ -314,8 +316,8 @@ def get_anomalie_wizard_handler():
             MACHINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_machine)],
             TYPE_ANOMALIE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type_anomalie)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_description)],
-            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photo)],
-            GPS: [MessageHandler(filters.LOCATION | filters.TEXT, receive_gps)],
+            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, receive_photo)],
+            GPS: [MessageHandler(filters.LOCATION | filters.TEXT & ~filters.COMMAND, receive_gps)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_anomalie)],
         },
         fallbacks=[]
