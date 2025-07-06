@@ -1,12 +1,6 @@
 import os
 import logging
-from dotenv import load_dotenv
 from firebase_admin import firestore
-
-load_dotenv()
-
-from telegram.error import BadRequest, Forbidden
-from telegram import Bot
 
 # Import db if Firestore enabled; otherwise create a stub list
 try:

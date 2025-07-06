@@ -7,9 +7,7 @@ Usage: python fix_railway_webhook.py
 import os
 import requests
 import json
-from dotenv import load_dotenv
 
-load_dotenv()
 
 def check_railway_status():
     """Vérifie le statut du service Railway"""
