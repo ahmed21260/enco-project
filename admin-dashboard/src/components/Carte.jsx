@@ -108,6 +108,17 @@ const Carte = () => {
     await db.collection('anomalies').doc(anomalieId).update({ handled: true });
   };
 
+  // Filtrage IA/Secrétaire : 1 ping par opérateur (dernier statut)
+  const latestPingByOperator = {};
+  positions.forEach(pos => {
+    const id = pos.operatorId || pos.operateur_id;
+    if (!id) return;
+    if (!latestPingByOperator[id] || new Date(pos.timestamp) > new Date(latestPingByOperator[id].timestamp)) {
+      latestPingByOperator[id] = pos;
+    }
+  });
+  const pingsToDisplay = Object.values(latestPingByOperator);
+
   return (
     <div className="carte-container">
       <div className="carte-header">
@@ -129,7 +140,7 @@ const Carte = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {positions.map((pos, index) => (
+        {pingsToDisplay.map((pos, index) => (
           <Marker
             key={`${pos.operateur_id}-${index}`}
             position={[pos.latitude, pos.longitude]}

@@ -2,7 +2,8 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
 from utils.firestore import save_urgence, db
 from datetime import datetime
-from services.enco_ai_assistant import ai_assistant
+from services.enco_ai_assistant import ENCOAIAssistant
+import logging
 
 TYPE, MESSAGE, GPS, CONFIRM = range(4)
 
@@ -16,14 +17,21 @@ URGENCE_TYPES = [
 ]
 
 async def start_urgence_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
         "🚨 **URGENCE FERROVIAIRE**\n\n"
         "Sélectionne le type d'urgence :",
         reply_markup=ReplyKeyboardMarkup(URGENCE_TYPES, one_time_keyboard=True, resize_keyboard=True)
     )
+    logging.info(f"[URGENCE] Début déclaration pour user {update.effective_user.id}")
     return TYPE
 
 async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     context.user_data['urgence_type'] = update.message.text
     
     # Afficher les numéros d'urgence selon le type
@@ -35,24 +43,29 @@ async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📞 **Numéros d'urgence :**\n"
         f"{numeros_urgence}"
     )
+    logging.info(f"[URGENCE] Type sélectionné: {update.message.text} pour user {update.effective_user.id}")
     return MESSAGE
 
 def get_numeros_urgence(type_urgence):
     """Retourne les numéros d'urgence selon le type"""
     base_numeros = "🚨 Sécurité SNCF : 3117\n📞 ENCO Assistance : 06 XX XX XX XX"
     
-    if "Collision" in type_urgence or "Obstacle" in type_urgence:
+    if type_urgence and ("Collision" in type_urgence or "Obstacle" in type_urgence):
         return f"{base_numeros}\n🚨 SAMU : 15\n🚔 Police : 17"
-    elif "Blessure" in type_urgence:
+    elif type_urgence and "Blessure" in type_urgence:
         return f"{base_numeros}\n🚨 SAMU : 15\n🏥 Médecin chantier : [numéro local]"
-    elif "Incendie" in type_urgence or "Fumée" in type_urgence:
+    elif type_urgence and ("Incendie" in type_urgence or "Fumée" in type_urgence):
         return f"{base_numeros}\n🚨 Pompiers : 18\n🚨 SAMU : 15"
-    elif "Panne machine" in type_urgence:
+    elif type_urgence and "Panne machine" in type_urgence:
         return f"{base_numeros}\n🔧 Maintenance ENCO : [numéro local]"
     else:
         return f"{base_numeros}\n🚨 SAMU : 15\n🚔 Police : 17\n🚨 Pompiers : 18"
 
 async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     if update.message.text and update.message.text.lower() == 'skip':
         context.user_data['urgence_message'] = ''
     else:
@@ -66,13 +79,18 @@ async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             one_time_keyboard=True, resize_keyboard=True
         )
     )
+    logging.info(f"[URGENCE] Message reçu pour user {update.effective_user.id}")
     return GPS
 
 async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     if not update.message.location:
         await update.message.reply_text("❗ Localisation obligatoire pour signaler une urgence.")
         return GPS
     
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     context.user_data['gps'] = update.message.location
     
     # Récapitulatif avec numéros d'urgence
@@ -87,15 +105,27 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"{numeros_urgence}\n\n"
         f"✅ Confirme l'envoi de l'urgence ? (oui/non)"
     )
+    logging.info(f"[URGENCE] Localisation reçue pour user {update.effective_user.id}")
     return CONFIRM
 
 async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    if not update.message.text:
+        await update.message.reply_text("Merci de répondre par 'oui' pour confirmer l'urgence.")
+        return CONFIRM
     if update.message.text.lower() != "oui":
         await update.message.reply_text("❌ Signalement annulé.")
+        logging.info(f"[URGENCE] Annulée pour user {update.effective_user.id}")
         return ConversationHandler.END
     
     user = update.message.from_user
-    loc = context.user_data['gps']
+    loc = context.user_data.get('gps')
+    if not user or not loc:
+        await update.message.reply_text("❌ Erreur : informations utilisateur ou localisation manquantes.")
+        return ConversationHandler.END
     
     # Données pour Firestore
     urgence_data = {
@@ -114,20 +144,26 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "lng": loc.longitude
         }
     }
+    
     # Enrichissement IA si possible
-    if ai_assistant and ai_assistant.client:
-        try:
-            priority_info = ai_assistant.prioritize_urgence(urgence_data["description"])
+    try:
+        assistant = ENCOAIAssistant()
+        if assistant.client:
+            priority_info = assistant.prioritize_urgence(urgence_data["description"])
             urgence_data["ai_priority"] = priority_info.get("priority")
             urgence_data["ai_reason"] = priority_info.get("reason")
             urgence_data["ai_immediate_action"] = priority_info.get("immediate_action")
-        except Exception as e:
-            print(f"[IA] Erreur enrichissement IA urgence: {e}")
+            logging.info(f"[URGENCE] Enrichissement IA effectué pour user {user.id}")
+    except Exception as e:
+        logging.error(f"[URGENCE] Erreur enrichissement IA: {e}")
+    
     # Sauvegarder dans Firestore avec gestion d'erreur
     try:
         save_urgence(urgence_data)
         log_msg = f"[URGENCE] Enregistrée pour {user.full_name} ({user.id}) : {urgence_data['type']}"
+        logging.info(log_msg)
         print(log_msg)
+        
         # Message de confirmation avec numéros d'urgence
         numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
         await update.message.reply_text(
@@ -145,6 +181,7 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
     except Exception as e:
+        logging.error(f"[URGENCE] Erreur Firestore: {e}")
         print(f"[URGENCE] Erreur Firestore: {e}")
         await update.message.reply_text(
             "❌ Erreur lors de l'enregistrement de l'urgence. Merci de réessayer ou contacter un admin.",
@@ -153,10 +190,7 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
         return ConversationHandler.END
-    # Ajout : gestion du retour menu principal
-    if update.message.text == "Menu principal":
-        from handlers.menu import start
-        await start(update, context)
+    
     return ConversationHandler.END
 
 def get_urgence_wizard_handler():
