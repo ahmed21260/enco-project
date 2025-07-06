@@ -60,15 +60,19 @@ async def receive_machine(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
-    # Filet de sécurité IA : vérifier si la machine est attendue
     machine_text = update.message.text
     machines_flat = [item for sublist in MACHINES for item in sublist]
-    if machine_text not in machines_flat:
-        # Appel IA pour aider l'opérateur
+    if machine_text in ["🤖 Aide IA", "💬 Aide IA"]:
         assistant = ENCOAIAssistant()
         suggestion = await assistant.generate_railway_response(
-            f"L'utilisateur a répondu '{machine_text}' à la question 'Sélectionne la machine concernée'. Propose une reformulation ou une aide pour cette étape métier ferroviaire.")
+            "Aide demandée pour l'étape machine du signalement d'anomalie.")
         await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return MACHINE
+    if machine_text not in machines_flat:
+        await update.message.reply_text(
+            "❗ Machine non reconnue. Merci de sélectionner une machine valide ou demander l'aide IA.",
+            reply_markup=ReplyKeyboardMarkup(machines_flat + [["🤖 Aide IA"]], resize_keyboard=True)
+        )
         return MACHINE
     context.user_data['machine'] = machine_text
     
@@ -77,7 +81,8 @@ async def receive_machine(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ReplyKeyboardMarkup([
             ["🔧 Hydraulique", "🔥 Moteur"],
             ["📡 Balise / Signalisation", "⚡ Électrique"],
-            ["⚙️ Mécanique", "Autre anomalie"]
+            ["⚙️ Mécanique", "Autre anomalie"],
+            ["🤖 Aide IA"]
         ], one_time_keyboard=True, resize_keyboard=True)
     )
     logging.info(f"[ANOMALIE] Machine sélectionnée: {machine_text} pour user {update.effective_user.id}")
@@ -89,13 +94,23 @@ async def receive_type_anomalie(update: Update, context: ContextTypes.DEFAULT_TY
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
     type_anomalie = update.message.text
-    # Filet de sécurité IA : vérifier si le type est attendu
-    types_attendus = ["🔧 Hydraulique", "🔥 Moteur", "📡 Balise / Signalisation", "⚡ Électrique", "⚙️ Mécanique", "Autre anomalie"]
-    if type_anomalie not in types_attendus:
+    if type_anomalie in ["🤖 Aide IA", "💬 Aide IA"]:
         assistant = ENCOAIAssistant()
         suggestion = await assistant.generate_railway_response(
-            f"L'utilisateur a répondu '{type_anomalie}' à la question 'Sélectionne le type d'anomalie'. Propose une reformulation ou une aide pour cette étape métier ferroviaire.")
+            "Aide demandée pour l'étape type d'anomalie.")
         await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return TYPE_ANOMALIE
+    types_attendus = ["🔧 Hydraulique", "🔥 Moteur", "📡 Balise / Signalisation", "⚡ Électrique", "⚙️ Mécanique", "Autre anomalie"]
+    if type_anomalie not in types_attendus:
+        await update.message.reply_text(
+            "❗ Type d'anomalie non reconnu. Merci de sélectionner un type valide ou demander l'aide IA.",
+            reply_markup=ReplyKeyboardMarkup([
+                ["🔧 Hydraulique", "🔥 Moteur"],
+                ["📡 Balise / Signalisation", "⚡ Électrique"],
+                ["⚙️ Mécanique", "Autre anomalie"],
+                ["🤖 Aide IA"]
+            ], one_time_keyboard=True, resize_keyboard=True)
+        )
         return TYPE_ANOMALIE
     context.user_data['type_anomalie'] = type_anomalie
     
@@ -129,6 +144,12 @@ async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response(
+            "Aide demandée pour l'étape description d'anomalie.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return DESCRIPTION
     # Si on vient de la sélection d'anomalie spécifique
     if context.user_data.get('type_anomalie') and not context.user_data.get('anomalie_specifique'):
         context.user_data['anomalie_specifique'] = update.message.text
@@ -149,6 +170,12 @@ async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_user:
         return ConversationHandler.END
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response(
+            "Aide demandée pour l'étape photo d'anomalie.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return PHOTO
     if not update.message.photo:
         await update.message.reply_text("❗ Photo obligatoire pour signaler une anomalie.")
         return PHOTO
@@ -168,6 +195,12 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_user:
         return ConversationHandler.END
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response(
+            "Aide demandée pour l'étape GPS d'anomalie.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return GPS
     if not update.message.location:
         await update.message.reply_text("❗ Localisation obligatoire pour signaler une anomalie.")
         return GPS
@@ -198,6 +231,12 @@ async def confirm_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response(
+            "Aide demandée pour l'étape confirmation d'anomalie.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return CONFIRM
     if not update.message.text:
         await update.message.reply_text("Merci de répondre par 'oui' pour confirmer l'anomalie.")
         return CONFIRM
@@ -269,16 +308,15 @@ def get_anomalie_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("anomalie", start_anomalie_wizard),
-            MessageHandler(filters.Regex("^Déclarer une anomalie$"), start_anomalie_wizard),
-            MessageHandler(filters.Regex("^Déclarer une panne$"), start_anomalie_wizard),
+            MessageHandler(filters.Regex("^🔧 Déclarer une panne$"), start_anomalie_wizard),
             MessageHandler(filters.Regex("^Déclarer une autre anomalie$"), start_anomalie_wizard)
         ],
         states={
             MACHINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_machine)],
             TYPE_ANOMALIE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type_anomalie)],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_description)],
-            PHOTO: [MessageHandler(filters.PHOTO, receive_photo)],
-            GPS: [MessageHandler(filters.LOCATION, receive_gps)],
+            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photo)],
+            GPS: [MessageHandler(filters.LOCATION | filters.TEXT, receive_gps)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_anomalie)],
         },
         fallbacks=[]

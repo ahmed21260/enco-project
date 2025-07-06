@@ -21,12 +21,13 @@ async def start_prise_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    reply_markup = ReplyKeyboardMarkup([
+        [KeyboardButton("📍 Envoyer ma position", request_location=True)],
+        ["🤖 Aide IA"]
+    ], one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(
         "📍 Merci d'envoyer ta localisation GPS pour commencer la prise de poste.",
-        reply_markup=ReplyKeyboardMarkup(
-            [[KeyboardButton("📍 Envoyer ma position", request_location=True)]],
-            one_time_keyboard=True, resize_keyboard=True
-        )
+        reply_markup=reply_markup
     )
     logging.info(f"[PRISE DE POSTE] Demande de localisation pour user {update.effective_user.id}")
     return GPS
@@ -46,7 +47,14 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❗ Localisation obligatoire pour commencer la prise de poste.")
         return GPS
     context.user_data['gps'] = update.message.location
-    await update.message.reply_text("🏗 Indique le chantier (ou scanne le QR code chantier) :")
+    reply_markup = ReplyKeyboardMarkup([
+        ["🏗 Indique le chantier (ou scanne le QR code chantier)"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "🏗 Indique le chantier (ou scanne le QR code chantier) :",
+        reply_markup=reply_markup
+    )
     logging.info(f"[PRISE DE POSTE] Localisation reçue pour user {update.effective_user.id}")
     return CHANTIER
 
@@ -62,7 +70,14 @@ async def receive_chantier(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
         return CHANTIER
     context.user_data['chantier'] = update.message.text
-    await update.message.reply_text("🚜 Scanne le QR code machine ou saisis l'ID machine :")
+    reply_markup = ReplyKeyboardMarkup([
+        ["🚜 Scanne le QR code machine ou saisis l'ID machine"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "🚜 Scanne le QR code machine ou saisis l'ID machine :",
+        reply_markup=reply_markup
+    )
     logging.info(f"[PRISE DE POSTE] Chantier reçu pour user {update.effective_user.id}")
     return MACHINE
 
@@ -80,7 +95,14 @@ async def receive_machine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['machine'] = update.message.text
     context.user_data['photos'] = []
     context.user_data['photo_index'] = 0
-    await update.message.reply_text(f"📸 Prends 4 photos obligatoires :\n1. Avant\n2. Arrière\n3. Côté\n4. Machine\nEnvoie chaque photo une par une.")
+    reply_markup = ReplyKeyboardMarkup([
+        ["📸 Prends 4 photos obligatoires :\n1. Avant\n2. Arrière\n3. Côté\n4. Machine\nEnvoie chaque photo une par une."],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "📸 Prends 4 photos obligatoires :\n1. Avant\n2. Arrière\n3. Côté\n4. Machine\nEnvoie chaque photo une par une.",
+        reply_markup=reply_markup
+    )
     await update.message.reply_text(f"Envoie la {PHOTO_LABELS[0]} :")
     logging.info(f"[PRISE DE POSTE] Machine reçue pour user {update.effective_user.id}")
     return PHOTOS
@@ -97,8 +119,12 @@ async def receive_photos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
         return PHOTOS
     idx = context.user_data.get('photo_index', 0)
+    reply_markup = ReplyKeyboardMarkup([
+        [f"Envoie la {PHOTO_LABELS[idx]}"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
     if not update.message.photo:
-        await update.message.reply_text(f"❗ Envoie la {PHOTO_LABELS[idx]}.")
+        await update.message.reply_text(f"❗ Envoie la {PHOTO_LABELS[idx]}.", reply_markup=reply_markup)
         return PHOTOS
     context.user_data['photos'].append(update.message.photo[-1].file_id)
     idx += 1
@@ -109,7 +135,14 @@ async def receive_photos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Toutes les photos reçues
     context.user_data['checklist_answers'] = []
     context.user_data['checklist_index'] = 0
-    await update.message.reply_text(f"✅ 4 photos reçues.\nChecklist obligatoire :\n{CHECKLIST_QUESTIONS[0]} (oui/non)")
+    reply_markup = ReplyKeyboardMarkup([
+        ["✅ 4 photos reçues.\nChecklist obligatoire :\n1. Vérification machine effectuée ? (oui/non)\n2. EPI portés ? (oui/non)\n3. Radio testée ? (oui/non)\n4. Signalisation comprise ? (oui/non)\n5. Zone de travail sécurisée ? (oui/non)"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "✅ 4 photos reçues.\nChecklist obligatoire :\n1. Vérification machine effectuée ? (oui/non)\n2. EPI portés ? (oui/non)\n3. Radio testée ? (oui/non)\n4. Signalisation comprise ? (oui/non)\n5. Zone de travail sécurisée ? (oui/non)",
+        reply_markup=reply_markup
+    )
     logging.info(f"[PRISE DE POSTE] 4 photos reçues pour user {update.effective_user.id}")
     return CHECKLIST
 
@@ -118,31 +151,49 @@ async def receive_checklist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
-    if update.message and update.message.text in ["🤖 Aide IA", "�� Aide IA"]:
+    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
         assistant = ENCOAIAssistant()
         prompt = build_ai_prompt("Aide demandée pour l'étape Checklist de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "CHECKLIST"})
         suggestion = await assistant.generate_railway_response(prompt)
         await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
         return CHECKLIST
     idx = context.user_data.get('checklist_index', 0)
+    reply_markup = ReplyKeyboardMarkup([
+        ["oui", "non"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
     if not update.message.text:
-        await update.message.reply_text("Merci de répondre par 'oui' ou 'non'.")
+        await update.message.reply_text("Merci de répondre par 'oui' ou 'non'.", reply_markup=reply_markup)
         return CHECKLIST
     answer = update.message.text.lower()
     if answer not in ["oui", "non"]:
-        await update.message.reply_text("Merci de répondre par 'oui' ou 'non'.")
+        await update.message.reply_text("Merci de répondre par 'oui' ou 'non'.", reply_markup=reply_markup)
         return CHECKLIST
     context.user_data['checklist_answers'].append(answer)
     idx += 1
     if idx < len(CHECKLIST_QUESTIONS):
         context.user_data['checklist_index'] = idx
-        await update.message.reply_text(f"{CHECKLIST_QUESTIONS[idx]} (oui/non)")
+        reply_markup = ReplyKeyboardMarkup([
+            [f"{CHECKLIST_QUESTIONS[idx]} (oui/non)"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True)
+        await update.message.reply_text(
+            f"{CHECKLIST_QUESTIONS[idx]} (oui/non)",
+            reply_markup=reply_markup
+        )
         return CHECKLIST
     # Toutes les questions répondues
     context.user_data['checklist'] = {
         q: a for q, a in zip(CHECKLIST_QUESTIONS, context.user_data['checklist_answers'])
     }
-    await update.message.reply_text("✅ Checklist terminée. Confirme la prise de poste ? (oui/non)")
+    reply_markup = ReplyKeyboardMarkup([
+        ["✅ Checklist terminée. Confirme la prise de poste ? (oui/non)"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "✅ Checklist terminée. Confirme la prise de poste ? (oui/non)",
+        reply_markup=reply_markup
+    )
     logging.info(f"[PRISE DE POSTE] Checklist terminée pour user {update.effective_user.id}")
     return CONFIRM
 
@@ -157,11 +208,15 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         suggestion = await assistant.generate_railway_response(prompt)
         await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
         return CONFIRM
+    reply_markup = ReplyKeyboardMarkup([
+        ["oui", "non"],
+        ["🤖 Aide IA"]
+    ], resize_keyboard=True)
     if not update.message.text:
-        await update.message.reply_text("Merci de répondre par 'oui' pour confirmer la prise de poste.")
+        await update.message.reply_text("Merci de répondre par 'oui' pour confirmer la prise de poste.", reply_markup=reply_markup)
         return CONFIRM
     if update.message.text.lower() != "oui":
-        await update.message.reply_text("❌ Prise de poste annulée.")
+        await update.message.reply_text("❌ Prise de poste annulée.", reply_markup=reply_markup)
         logging.info(f"[PRISE DE POSTE] Annulée pour user {update.effective_user.id}")
         return ConversationHandler.END
     user = update.message.from_user
@@ -199,7 +254,7 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "checklistEffectuee": True
     })
     logging.info(f"[PRISE DE POSTE] Enregistrée pour user {user.id}")
-    await update.message.reply_text("✅ Prise de poste enregistrée. Prudence et bon courage !")
+    await update.message.reply_text("✅ Prise de poste enregistrée. Prudence et bon courage !", reply_markup=ReplyKeyboardMarkup([["👍"], ["🤖 Aide IA"]], resize_keyboard=True))
     # Appel IA pour suggestion ou feedback
     try:
         assistant = ENCOAIAssistant()
@@ -218,13 +273,14 @@ def get_prise_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("prise", start_prise_wizard),
+            MessageHandler(filters.Regex("^📌 Prise de poste$"), start_prise_wizard),
             MessageHandler(filters.Regex("^Commencer ma prise de poste$"), start_prise_wizard)
         ],
         states={
-            GPS: [MessageHandler(filters.LOCATION, receive_gps)],
+            GPS: [MessageHandler(filters.LOCATION | filters.TEXT, receive_gps)],
             CHANTIER: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_chantier)],
             MACHINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_machine)],
-            PHOTOS: [MessageHandler(filters.PHOTO, receive_photos)],
+            PHOTOS: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photos)],
             CHECKLIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_checklist)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_prise)],
         },

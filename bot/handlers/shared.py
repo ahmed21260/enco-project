@@ -1,24 +1,27 @@
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram import ReplyKeyboardMarkup, KeyboardButton
 from datetime import datetime
 
-# 🧭 Menus et claviers communs
-MENU_KEYBOARD = [
-    ["Prise de poste", "Fin de poste"],
-    ["Checklist", "Anomalie"],
-    ["🤖 Aide IA"]
+# 📌 MENUS PRINCIPAUX ------------------------------------------------------
+
+MAIN_MENU = [
+    ["📌 Prise de poste", "📷 Envoyer une photo"],
+    ["📄 Bon d'attachement", "🛑 URGENCE / INCIDENT"],
+    ["🔧 Déclarer une panne", "🗺️ Outils ferroviaires"],
+    ["🤖 Assistant AI", "🗓️ Planning"]
 ]
-MENU_MARKUP = ReplyKeyboardMarkup(MENU_KEYBOARD, resize_keyboard=True)
+MAIN_MENU_MARKUP = ReplyKeyboardMarkup(MAIN_MENU, resize_keyboard=True)
 
-YES_NO_KEYBOARD = [["Oui", "Non"], ["🤖 Aide IA"]]
-YES_NO_MARKUP = ReplyKeyboardMarkup(YES_NO_KEYBOARD, resize_keyboard=True)
+AI_ASSISTANT_MENU = [["💬 Aide IA", "Retour au menu"]]
+AI_ASSISTANT_MARKUP = ReplyKeyboardMarkup(AI_ASSISTANT_MENU, resize_keyboard=True)
 
-AI_ASSISTANT_KEYBOARD = [["💬 Aide IA", "Retour au menu"]]
-AI_ASSISTANT_MARKUP = ReplyKeyboardMarkup(AI_ASSISTANT_KEYBOARD, resize_keyboard=True)
+YES_NO_MENU = [["Oui", "Non"], ["🤖 Aide IA"]]
+YES_NO_MARKUP = ReplyKeyboardMarkup(YES_NO_MENU, resize_keyboard=True)
 
-# 📌 Constantes métier partagées
+
+# 📋 CHECKLIST / PHOTOS ----------------------------------------------------
+
 PHOTO_LABELS = [
-    "Vue d’ensemble",
+    "Vue d'ensemble",
     "N° machine",
     "Pression hydraulique",
     "Attelage",
@@ -26,18 +29,14 @@ PHOTO_LABELS = [
 ]
 
 CHECKLIST_QUESTIONS = [
-    "Niveau d’huile vérifié ?",
+    "Niveau d'huile vérifié ?",
     "Pneus ou chenilles en bon état ?",
     "Feux et avertisseurs OK ?",
     "Document de bord présent ?",
 ]
 
-ANOMALIES_HYDRAULIQUE = [
-    "Fuite vérin",
-    "Flexible abîmé",
-    "Mauvaise pression",
-    "Mouvement lent ou absent",
-]
+
+# 🚜 MACHINES DISPONIBLES --------------------------------------------------
 
 MACHINES_DISPO = [
     "CAT M323F",
@@ -46,13 +45,58 @@ MACHINES_DISPO = [
     "Rail-Route UNAC",
 ]
 
-# 🧼 Helpers utilitaires
+MACHINE_KEYBOARD = ReplyKeyboardMarkup(
+    [[m] for m in MACHINES_DISPO] + [["Autre machine", "🤖 Aide IA"]],
+    resize_keyboard=True, one_time_keyboard=True
+)
 
-def format_date():
+
+# 🛠️ ANOMALIES ------------------------------------------------------------
+
+ANOMALIES_HYDRAULIQUE = [
+    "Fuite vérin",
+    "Flexible abîmé",
+    "Mauvaise pression",
+    "Mouvement lent ou absent",
+]
+
+# Tu peux ajouter ANOMALIES_MOTEUR, ANOMALIES_ELECTRIQUE, etc.
+
+
+# 📍 CLAVIER GPS -----------------------------------------------------------
+
+def get_gps_keyboard():
+    return ReplyKeyboardMarkup(
+        [[KeyboardButton("📍 Envoyer ma position", request_location=True)]],
+        resize_keyboard=True, one_time_keyboard=True
+    )
+
+
+# 🔁 CLAVIER DE CONFIRMATION / VALIDATION ----------------------------------
+
+CONFIRM_MENU = [["✅ Confirmer", "❌ Annuler"], ["🤖 Aide IA"]]
+CONFIRM_MARKUP = ReplyKeyboardMarkup(CONFIRM_MENU, resize_keyboard=True, one_time_keyboard=True)
+
+
+# ✅ CLAVIER POST-ANOMALIE --------------------------------------------------
+
+POST_ANOMALIE_MENU = [
+    ["Menu principal", "Déclarer une autre anomalie"],
+    ["URGENCE SNCF", "Envoyer photo en cours de mission"]
+]
+POST_ANOMALIE_MARKUP = ReplyKeyboardMarkup(POST_ANOMALIE_MENU, resize_keyboard=True)
+
+
+# 🕐 DATES & HEURES UTILITAIRES --------------------------------------------
+
+def format_date() -> str:
     return datetime.now().strftime("%d/%m/%Y")
 
-def format_heure():
+def format_heure() -> str:
     return datetime.now().strftime("%H:%M")
+
+
+# 🧠 VALIDATEURS ------------------------------------------------------------
 
 def validate_yes_no(text: str) -> bool:
     return text.lower() in ["oui", "non"]
@@ -60,20 +104,24 @@ def validate_yes_no(text: str) -> bool:
 def is_valid_photo_label(label: str) -> bool:
     return label in PHOTO_LABELS
 
-# 🧠 Helpers IA (exemple)
+
+# 🔮 HELPER POUR IA ---------------------------------------------------------
+
 def build_ai_prompt(question: str, context: dict = None) -> str:
     base = (
-        "Tu es une IA secrétaire, assistante logistique, administrative, technique et support pour un conducteur de machine rail route. "
+        "Tu es une IA secrétaire, assistante logistique, administrative, technique et support pour un conducteur de machine rail-route. "
         "Tu aides à structurer les informations, répondre aux questions métier, donner des conseils sécurité, logistique, administratif, bricolage, ménage, etc. "
         "Sois proactive, claire, concise, et toujours orientée solution."
     )
     prompt = f"{base}\n\nQuestion de l'utilisateur : {question}"
     if context:
         prompt += f"\n\nContexte métier : {context}"
-    return prompt 
+    return prompt
+
+
+# 🏁 MENU PRINCIPAL (commande /start ou retour menu) -----------------------
 
 async def menu_principal(update, context):
-    reply_markup = ReplyKeyboardMarkup(MENU_KEYBOARD, resize_keyboard=True)
     await update.message.reply_text(
         "👋 Bienvenue sur ENCO Bot !\n\n"
         "Voici ce que tu peux faire :\n"
@@ -85,5 +133,5 @@ async def menu_principal(update, context):
         "🗺️ Outils ferroviaires : géoportail, règlements, procédures\n"
         "🗓️ Planning, etc.\n\n"
         "Utilise les boutons ci-dessous pour naviguer, ou tape /aide pour plus d'infos.",
-        reply_markup=reply_markup
+        reply_markup=MAIN_MENU_MARKUP
     ) 

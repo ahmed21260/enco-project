@@ -18,9 +18,10 @@ from handlers.consult_docs import consulter_documents
 from handlers.historique import afficher_historique
 from handlers.urgence import get_urgence_wizard_handler as get_urgence_handler
 from handlers.portail import portail_callback
-from handlers.photo import handle_photo, handle_voice
+from handlers.photo import get_photo_handler
 from handlers.planning import get_planning_wizard_handler
 from handlers.ai_assistant import get_ai_assistant_handler
+from handlers.photo import get_photo_handler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Bot, Update
 from utils.firestore import db
@@ -397,11 +398,15 @@ def main():
     application.add_handler(get_outils_ferroviaires_handler())
     application.add_handler(get_planning_wizard_handler())
     application.add_handler(get_ai_assistant_handler())
+    application.add_handler(get_photo_handler())
     application.add_handler(CallbackQueryHandler(portail_callback))
     
     # Ajouter les handlers de photos et voix
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.VOICE, handle_voice))
+    # Les photos sont maintenant gérées par le handler photo dédié
+    async def handle_voice_disabled(update, context):
+        if update.message:
+            await update.message.reply_text("🗣️ Messages vocaux temporairement désactivés.")
+    application.add_handler(MessageHandler(filters.VOICE, handle_voice_disabled))
 
     # Ajouter le handler de texte général en dernier (logique métier du menu)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
