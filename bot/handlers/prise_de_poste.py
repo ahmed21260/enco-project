@@ -3,7 +3,7 @@ from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, fi
 from utils.firestore import save_position, db
 from services.enco_ai_assistant import ENCOAIAssistant
 import logging
-from handlers.shared import menu_principal
+from handlers.shared import menu_principal, build_ai_prompt
 
 GPS, CHANTIER, MACHINE, PHOTOS, CHECKLIST, CONFIRM = range(6)
 
@@ -36,6 +36,12 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        prompt = build_ai_prompt("Aide demandée pour l'étape GPS de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "GPS"})
+        suggestion = await assistant.generate_railway_response(prompt)
+        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
+        return GPS
     if not update.message.location:
         await update.message.reply_text("❗ Localisation obligatoire pour commencer la prise de poste.")
         return GPS
@@ -49,6 +55,12 @@ async def receive_chantier(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        prompt = build_ai_prompt("Aide demandée pour l'étape Chantier de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "CHANTIER"})
+        suggestion = await assistant.generate_railway_response(prompt)
+        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
+        return CHANTIER
     context.user_data['chantier'] = update.message.text
     await update.message.reply_text("🚜 Scanne le QR code machine ou saisis l'ID machine :")
     logging.info(f"[PRISE DE POSTE] Chantier reçu pour user {update.effective_user.id}")
@@ -59,6 +71,12 @@ async def receive_machine(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        prompt = build_ai_prompt("Aide demandée pour l'étape Machine de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "MACHINE"})
+        suggestion = await assistant.generate_railway_response(prompt)
+        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
+        return MACHINE
     context.user_data['machine'] = update.message.text
     context.user_data['photos'] = []
     context.user_data['photo_index'] = 0
@@ -72,6 +90,12 @@ async def receive_photos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        prompt = build_ai_prompt("Aide demandée pour l'étape Photos de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "PHOTOS"})
+        suggestion = await assistant.generate_railway_response(prompt)
+        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
+        return PHOTOS
     idx = context.user_data.get('photo_index', 0)
     if not update.message.photo:
         await update.message.reply_text(f"❗ Envoie la {PHOTO_LABELS[idx]}.")
@@ -94,6 +118,12 @@ async def receive_checklist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message and update.message.text in ["🤖 Aide IA", "�� Aide IA"]:
+        assistant = ENCOAIAssistant()
+        prompt = build_ai_prompt("Aide demandée pour l'étape Checklist de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "CHECKLIST"})
+        suggestion = await assistant.generate_railway_response(prompt)
+        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
+        return CHECKLIST
     idx = context.user_data.get('checklist_index', 0)
     if not update.message.text:
         await update.message.reply_text("Merci de répondre par 'oui' ou 'non'.")
@@ -121,6 +151,12 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        prompt = build_ai_prompt("Aide demandée pour l'étape Confirmation de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "CONFIRM"})
+        suggestion = await assistant.generate_railway_response(prompt)
+        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
+        return CONFIRM
     if not update.message.text:
         await update.message.reply_text("Merci de répondre par 'oui' pour confirmer la prise de poste.")
         return CONFIRM

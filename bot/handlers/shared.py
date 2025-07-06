@@ -5,11 +5,12 @@ from datetime import datetime
 # 🧭 Menus et claviers communs
 MENU_KEYBOARD = [
     ["Prise de poste", "Fin de poste"],
-    ["Checklist", "Anomalie"]
+    ["Checklist", "Anomalie"],
+    ["🤖 Aide IA"]
 ]
 MENU_MARKUP = ReplyKeyboardMarkup(MENU_KEYBOARD, resize_keyboard=True)
 
-YES_NO_KEYBOARD = [["Oui", "Non"]]
+YES_NO_KEYBOARD = [["Oui", "Non"], ["🤖 Aide IA"]]
 YES_NO_MARKUP = ReplyKeyboardMarkup(YES_NO_KEYBOARD, resize_keyboard=True)
 
 AI_ASSISTANT_KEYBOARD = [["💬 Aide IA", "Retour au menu"]]
@@ -61,9 +62,14 @@ def is_valid_photo_label(label: str) -> bool:
 
 # 🧠 Helpers IA (exemple)
 def build_ai_prompt(question: str, context: dict = None) -> str:
-    prompt = f"Réponds en tant qu’assistant de sécurité ferroviaire :\n\nQuestion : {question}"
+    base = (
+        "Tu es une IA secrétaire, assistante logistique, administrative, technique et support pour un conducteur de machine rail route. "
+        "Tu aides à structurer les informations, répondre aux questions métier, donner des conseils sécurité, logistique, administratif, bricolage, ménage, etc. "
+        "Sois proactive, claire, concise, et toujours orientée solution."
+    )
+    prompt = f"{base}\n\nQuestion de l'utilisateur : {question}"
     if context:
-        prompt += f"\n\nContexte : {context}"
+        prompt += f"\n\nContexte métier : {context}"
     return prompt 
 
 async def menu_principal(update, context):
