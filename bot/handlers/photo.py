@@ -4,61 +4,87 @@ from utils.firestore import db, upload_photo_to_storage
 import logging
 import os
 from datetime import datetime
+from PIL import Image
 
 # États de conversation
 PHOTO, DESCRIPTION, GPS = range(3)
 
 async def start_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Démarre le workflow d'envoi de photo"""
     if not update.message or not update.effective_user:
         return ConversationHandler.END
-    
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     await update.message.reply_text(
-        "📷 **Envoi de photo**\n\n"
-        "Prends une photo de l'état ou du problème à signaler :",
-        reply_markup=ReplyKeyboardMarkup([
-            ["📷 Prendre une photo"],
-            ["🤖 Aide IA"]
-        ], resize_keyboard=True)
+        "📷 **ENVOI DE PHOTO**\n\n"
+        "Envoie une photo avec une description (optionnel) :"
     )
-    logging.info(f"[PHOTO] Début envoi photo pour user {update.effective_user.id}")
     return PHOTO
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Reçoit la photo et demande une description"""
     if not update.message or not update.effective_user:
         return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     
-    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
-        from services.enco_ai_assistant import ENCOAIAssistant
-        assistant = ENCOAIAssistant()
-        suggestion = await assistant.generate_railway_response("Aide demandée pour l'envoi de photo.")
-        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+    if update.message.photo:
+        # Traitement de la photo
+        photo = update.message.photo[-1]
+        file = await context.bot.get_file(photo.file_id)
+        
+        # Créer le dossier local
+        user = update.effective_user
+        if not user:
+            await update.message.reply_text("❌ Erreur : utilisateur non trouvé.")
+            return ConversationHandler.END
+        local_dir = f"bot/photos/{user.id}"
+        os.makedirs(local_dir, exist_ok=True)
+        
+        # Nom du fichier
+        file_name = f"{user.id}_photo_{update.message.date.strftime('%Y%m%d_%H%M%S')}.jpg"
+        file_path = f"{local_dir}/{file_name}"
+        
+        # Télécharger et optimiser
+        await file.download_to_drive(file_path)
+        
+        # Optimiser l'image
+        try:
+            with Image.open(file_path) as img:
+                img.thumbnail((1024, 1024))
+                img.save(file_path, "JPEG")
+        except Exception as e:
+            print(f"Erreur resize: {e}")
+        
+        # Upload vers Firebase Storage
+        from utils.firestore import upload_photo_to_storage
+        storage_path = f"photos/{user.id}/{file_name}"
+        photoURL = upload_photo_to_storage(file_path, storage_path)
+        
+        # Enregistrer dans Firestore
+        photo_data = {
+            "operatorId": user.id,
+            "operatorName": user.full_name,
+            "timestamp": update.message.date.isoformat(),
+            "photoURL": photoURL,
+            "description": context.user_data.get('description', ''),
+            "type": "photo_mission"
+        }
+        
+        try:
+            db.collection('photos').add(photo_data)
+            await update.message.reply_text(
+                "✅ Photo enregistrée avec succès !",
+                reply_markup=ReplyKeyboardMarkup([
+                    ["Menu principal", "Envoyer une autre photo"],
+                    ["Déclarer une panne", "URGENCE SNCF"]
+                ], resize_keyboard=True)
+            )
+        except Exception as e:
+            await update.message.reply_text(f"❌ Erreur lors de l'enregistrement : {str(e)}")
+        
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text("❗ Envoie une photo valide.")
         return PHOTO
-    
-    if not update.message.photo:
-        await update.message.reply_text(
-            "❗ Merci d'envoyer une photo.",
-            reply_markup=ReplyKeyboardMarkup([
-                ["📷 Prendre une photo"],
-                ["🤖 Aide IA"]
-            ], resize_keyboard=True)
-        )
-        return PHOTO
-    
-    # Sauvegarder la photo
-    context.user_data['photo'] = update.message.photo[-1].file_id
-    
-    await update.message.reply_text(
-        "📝 Ajoute une description (optionnel, tape 'skip' pour passer) :",
-        reply_markup=ReplyKeyboardMarkup([
-            ["Ajouter une description"],
-            ["skip"],
-            ["🤖 Aide IA"]
-        ], resize_keyboard=True)
-    )
-    logging.info(f"[PHOTO] Photo reçue pour user {update.effective_user.id}")
-    return DESCRIPTION
 
 async def receive_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Reçoit la description et demande la localisation"""
@@ -150,15 +176,13 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 def get_photo_handler():
-    """Retourne le handler pour l'envoi de photos"""
     return ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex("^📷 Envoyer une photo$"), start_photo)
+            CommandHandler("photo", start_photo),
+            MessageHandler(filters.Regex(r"^📷 Envoyer une photo$"), start_photo)
         ],
         states={
-            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photo)],
-            DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_description)],
-            GPS: [MessageHandler(filters.LOCATION | filters.TEXT, receive_gps)],
+            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, receive_photo)],
         },
         fallbacks=[]
     ) 

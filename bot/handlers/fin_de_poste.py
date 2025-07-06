@@ -5,12 +5,18 @@ from utils.firestore import db
 PHOTO, CONFIRM = range(2)
 
 async def start_fin_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
     await update.message.reply_text(
-        "📷 Merci d'envoyer une photo du bon d’attachement papier signé (obligatoire, JPG/PDF max 5 Mo) :"
+        "📷 Merci d'envoyer une photo du bon d'attachement papier signé (obligatoire, JPG/PDF max 5 Mo) :"
     )
     return PHOTO
 
 async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
     if not update.message.photo:
         await update.message.reply_text("❗ Photo obligatoire pour clôturer la fin de poste.")
         return PHOTO
@@ -19,10 +25,20 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CONFIRM
 
 async def confirm_fin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    if not update.message.text:
+        await update.message.reply_text("❌ Réponse invalide.")
+        return CONFIRM
     if update.message.text.lower() != "oui":
         await update.message.reply_text("❌ Clôture annulée.")
         return ConversationHandler.END
     user = update.message.from_user
+    if not user:
+        await update.message.reply_text("❌ Erreur : utilisateur non trouvé.")
+        return ConversationHandler.END
     # Suppression/MAJ Firestore : positions_operateurs (désactivation ou suppression)
     doc_id = str(user.id)
     try:
@@ -49,7 +65,7 @@ async def confirm_fin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text == "Menu principal":
         from handlers.menu import start
         await start(update, context)
-    await update.message.reply_text("✅ Poste terminé. Merci pour ton travail aujourd’hui 💪\nTon bon est bien enregistré. À demain !")
+    await update.message.reply_text("✅ Poste terminé. Merci pour ton travail aujourd'hui 💪\nTon bon est bien enregistré. À demain !")
     return ConversationHandler.END
 
 def get_fin_wizard_handler():
@@ -59,6 +75,7 @@ def get_fin_wizard_handler():
             MessageHandler(filters.Regex(r"^Fin de poste$"), start_fin_wizard)
         ],
         states={
+            PHOTO: [MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, receive_photo)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_fin)],
         },
         fallbacks=[]
