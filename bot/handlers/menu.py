@@ -25,29 +25,29 @@ from handlers.shared import menu_principal, MAIN_MENU, MAIN_MENU_MARKUP
 
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text in ["📌 Prise de poste", "/prise de poste"]:
+    if text in ["📌 Prise de poste", "/prise"]:
         await start_prise_wizard(update, context)
     elif text == "Fin de poste / Bon papier" or text == "Fin de poste":
         await start_fin_wizard(update, context)
-    elif text == "🚨 Déclarer une urgence" or text == "🛑 URGENCE / INCIDENT":
+    elif text in ["🛑 URGENCE / INCIDENT", "/urgence"]:
         await start_urgence_wizard(update, context)
-    elif text in ["🛠️ Déclarer une anomalie", "🔧 Déclarer une panne", "/anomalie", "Anomalie"]:
+    elif text in ["🔧 Déclarer une panne", "/anomalie"]:
         await start_anomalie_wizard(update, context)
-    elif text == "✅ Remplir une checklist" or text == "Checklist sécurité":
+    elif text in ["✅ Remplir une checklist", "/checklist"]:
         await start_checklist(update, context)
-    elif text == "📄 Documents":
-        await consulter_documents(update, context)
-    elif text == "🗺️ Outils ferroviaires":
+    elif text in ["📄 Bon d'attachement", "/bon"]:
+        await start_bon_wizard(update, context)
+    elif text in ["🗺️ Outils ferroviaires", "/outils"]:
         await start_outils_ferroviaires(update, context)
-    elif text == "Menu principal":
-        await start(update, context)
-    elif text == "📷 Envoyer une photo":
+    elif text in ["📷 Envoyer une photo", "/photo"]:
         await start_photo(update, context)
-    elif text == "🗓️ Planning":
-        await start_planning_wizard(update, context)
-    elif text == "🤖 Assistant AI":
+    elif text in ["🤖 Assistant AI", "/ai"]:
         from handlers.ai_assistant import start_ai_assistant
         await start_ai_assistant(update, context)
+    elif text in ["🗓️ Planning", "/planning"]:
+        await start_planning_wizard(update, context)
+    elif text in ["Menu principal", "/start"]:
+        await start(update, context)
     else:
         # Pour tout texte non reconnu, retour à l'accueil immersif
         await start(update, context)

@@ -231,7 +231,7 @@ def get_urgence_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("urgence", start_urgence_wizard),
-            MessageHandler(filters.Regex("^🛑 URGENCE / INCIDENT$"), start_urgence_wizard)
+            MessageHandler(filters.Regex(r"^🛑 URGENCE / INCIDENT$"), start_urgence_wizard)
         ],
         states={
             TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type)],
