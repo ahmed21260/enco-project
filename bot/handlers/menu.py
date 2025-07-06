@@ -36,7 +36,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_fin_wizard(update, context)
     elif text == "🚨 Déclarer une urgence" or text == "🛑 URGENCE / INCIDENT":
         await start_urgence_wizard(update, context)
-    elif text == "🛠️ Déclarer une anomalie" or text == "🔧 Déclarer une panne":
+    elif text in ["🛠️ Déclarer une anomalie", "🔧 Déclarer une panne", "/anomalie", "Anomalie"]:
         await start_anomalie_wizard(update, context)
     elif text == "✅ Remplir une checklist" or text == "Checklist sécurité":
         await start_checklist(update, context)
