@@ -32,6 +32,12 @@ import json
 from datetime import datetime
 print("=== Imports handlers et services OK ===")
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Pas grave si python-dotenv n'est pas installé en prod
+
 # Configuration logging robuste
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", 
@@ -380,17 +386,12 @@ def main():
     # Ajouter un handler universel pour les messages texte (IA + Firestore)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_all_text_to_firestore), group=2)
     
-    # Handler IA : uniquement si le message est exactement “🤖 Aide IA” ou “💬 Aide IA”
+    # Handler IA : uniquement si le message est exactement "🤖 Aide IA" ou "💬 Aide IA"
     application.add_handler(
         MessageHandler(filters.Regex(r"^(🤖|💬) Aide IA$"), handle_all_text_to_firestore),
         group=2
     )
 
-    # Handler menu / logique métier normale
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
-    )
-    
     # Ajouter un handler de test
     application.add_handler(CommandHandler("test", test_handler))
     application.add_handler(CommandHandler("ping", ping))
@@ -402,7 +403,7 @@ def main():
     application.add_handler(CommandHandler("docs", handle_docs_admin))
     application.add_handler(CommandHandler("historique", handle_historique_admin))
     
-    # Ajouter les handlers spécifiques
+    # Ajouter les handlers spécifiques (ConversationHandler) EN PREMIER
     application.add_handler(prise_handler())
     application.add_handler(fin_handler())
     application.add_handler(get_checklist_handler())
@@ -415,6 +416,11 @@ def main():
     application.add_handler(get_ai_assistant_handler())
     application.add_handler(get_photo_handler())
     application.add_handler(CallbackQueryHandler(portail_callback))
+    
+    # Handler menu / logique métier normale EN DERNIER (fallback)
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
+    )
     
     # Ajouter les handlers de photos et voix
     # Les photos sont maintenant gérées par le handler photo dédié
