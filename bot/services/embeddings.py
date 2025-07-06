@@ -9,9 +9,6 @@ import logging
 from typing import List, Dict, Any, Optional
 import numpy as np
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Configuration OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

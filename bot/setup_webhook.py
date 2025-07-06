@@ -7,9 +7,6 @@ Usage: python setup_webhook.py
 import os
 import requests
 import json
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Configuration
 BOT_TOKEN = os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")

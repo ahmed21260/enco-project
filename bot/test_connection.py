@@ -6,7 +6,6 @@ Script de test pour diagnostiquer les problèmes de connectivité
 import os
 import logging
 import asyncio
-from dotenv import load_dotenv
 from telegram import Bot
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -153,7 +152,6 @@ async def main():
     print("=" * 50)
     
     # Charger les variables d'environnement
-    load_dotenv()
     
     # Tests
     tests = [
