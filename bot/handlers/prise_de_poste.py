@@ -3,7 +3,7 @@ from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, fi
 from utils.firestore import save_position, db
 from services.enco_ai_assistant import ENCOAIAssistant
 import logging
-from handlers.menu import menu_principal
+from handlers.shared import menu_principal
 
 GPS, CHANTIER, MACHINE, PHOTOS, CHECKLIST, CONFIRM = range(6)
 
