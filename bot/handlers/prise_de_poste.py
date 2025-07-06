@@ -273,14 +273,10 @@ def get_prise_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("prise", start_prise_wizard),
-            MessageHandler(filters.Regex("^📌 Prise de poste$"), start_prise_wizard),
-            MessageHandler(filters.Regex("^Commencer ma prise de poste$"), start_prise_wizard)
+            MessageHandler(filters.Regex(r"^📌 Prise de poste$"), start_prise_wizard)
         ],
         states={
-            GPS: [MessageHandler(filters.LOCATION | filters.TEXT, receive_gps)],
-            CHANTIER: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_chantier)],
             MACHINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_machine)],
-            PHOTOS: [MessageHandler(filters.PHOTO | filters.TEXT, receive_photos)],
             CHECKLIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_checklist)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_prise)],
         },

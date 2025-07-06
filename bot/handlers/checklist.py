@@ -37,8 +37,7 @@ async def q3(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def get_checklist_handler():
     return ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex("^Checklist sécurité$"), start_checklist),
-            MessageHandler(filters.Regex("^✅ Remplir une checklist$"), start_checklist),
+            MessageHandler(filters.Regex(r"^✅ Remplir une checklist$"), start_checklist),
             CommandHandler("checklist", start_checklist)
         ],
         states={

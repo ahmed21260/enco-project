@@ -308,8 +308,7 @@ def get_anomalie_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("anomalie", start_anomalie_wizard),
-            MessageHandler(filters.Regex("^🔧 Déclarer une panne$"), start_anomalie_wizard),
-            MessageHandler(filters.Regex("^Déclarer une autre anomalie$"), start_anomalie_wizard)
+            MessageHandler(filters.Regex(r"^🔧 Déclarer une panne$"), start_anomalie_wizard)
         ],
         states={
             MACHINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_machine)],
