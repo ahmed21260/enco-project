@@ -19,7 +19,7 @@ from PIL import Image
 import os
 from handlers.photo import start_photo
 import requests
-from handlers.shared import menu_principal, MAIN_MENU
+from handlers.shared import menu_principal, MAIN_MENU, MAIN_MENU_MARKUP
 
 # Suppression du MENU_KEYBOARD dupliqué - utilisation de celui de shared.py
 
@@ -56,22 +56,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
         "👋 *Bienvenue sur ENCO, l'outil des opérateurs ferroviaires !*\n\n"
         "Voici ce que tu peux faire :\n"
-        "• 📌 *Prendre ton poste* (déclare ta présence et ta position)\n"
-        "• 🚨 *Déclarer une urgence* (incident grave, sécurité)\n"
+        "• 📌 *Prise de poste* (déclare ta présence et ta position)\n"
+        "• 🛑 *Déclarer une urgence* (incident grave, sécurité)\n"
         "• 🛠️ *Déclarer une anomalie* (problème technique)\n"
         "• ✅ *Remplir une checklist* (sécurité, matériel)\n"
         "• 📄 *Consulter les documents* (règlement, procédures)\n\n"
         "_Tout est synchronisé en temps réel avec le dashboard ENCO._"
     )
-    keyboard = [
-        ["📌 Prendre mon poste", "🚨 Déclarer une urgence"],
-        ["🛠️ Déclarer une anomalie", "✅ Remplir une checklist"],
-        ["📄 Documents", "Menu principal"]
-    ]
     await update.message.reply_text(
         welcome_text,
         parse_mode="Markdown",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        reply_markup=MAIN_MENU_MARKUP
     )
 
 async def aide(update: Update, context: ContextTypes.DEFAULT_TYPE):
