@@ -265,6 +265,153 @@ app.post('/upload-photo', upload.single('photo'), async (req, res) => {
   }
 });
 
+// Route pour récupérer la liste des bons d'attachement
+app.get('/api/bons-attachement', async (req, res) => {
+    try {
+        const bonsSnapshot = await db.collection('bons_attachement').get();
+        const bons = [];
+        bonsSnapshot.forEach(doc => {
+            bons.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(bons);
+    } catch (error) {
+        console.error('Erreur lecture bons d\'attachement:', error);
+        res.status(500).json({ error: 'Erreur lecture bons d\'attachement' });
+    }
+});
+
+// Route pour récupérer la liste des alertes
+app.get('/api/alertes', async (req, res) => {
+    try {
+        const alertesSnapshot = await db.collection('alertes').get();
+        const alertes = [];
+        alertesSnapshot.forEach(doc => {
+            alertes.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(alertes);
+    } catch (error) {
+        console.error('Erreur lecture alertes:', error);
+        res.status(500).json({ error: 'Erreur lecture alertes' });
+    }
+});
+
+// Route pour récupérer la liste des scans QR
+app.get('/api/scans-qr', async (req, res) => {
+    try {
+        const scansSnapshot = await db.collection('scans_qr').get();
+        const scans = [];
+        scansSnapshot.forEach(doc => {
+            scans.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(scans);
+    } catch (error) {
+        console.error('Erreur lecture scans QR:', error);
+        res.status(500).json({ error: 'Erreur lecture scans QR' });
+    }
+});
+
+// Route pour récupérer la liste des tickets de maintenance
+app.get('/api/maintenance-issues', async (req, res) => {
+    try {
+        const issuesSnapshot = await db.collection('maintenance_issues').get();
+        const issues = [];
+        issuesSnapshot.forEach(doc => {
+            issues.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(issues);
+    } catch (error) {
+        console.error('Erreur lecture maintenance issues:', error);
+        res.status(500).json({ error: 'Erreur lecture maintenance issues' });
+    }
+});
+
+// Route pour récupérer la liste des actions géoportail
+app.get('/api/actions-geoportail', async (req, res) => {
+    try {
+        const actionsSnapshot = await db.collection('actions_geoportail').get();
+        const actions = [];
+        actionsSnapshot.forEach(doc => {
+            actions.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(actions);
+    } catch (error) {
+        console.error('Erreur lecture actions geoportail:', error);
+        res.status(500).json({ error: 'Erreur lecture actions geoportail' });
+    }
+});
+
+// Route pour récupérer la liste des rapports techniques
+app.get('/api/rapports-techniques', async (req, res) => {
+    try {
+        const rapportsSnapshot = await db.collection('rapports_techniques').get();
+        const rapports = [];
+        rapportsSnapshot.forEach(doc => {
+            rapports.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(rapports);
+    } catch (error) {
+        console.error('Erreur lecture rapports techniques:', error);
+        res.status(500).json({ error: 'Erreur lecture rapports techniques' });
+    }
+});
+
+// Route pour récupérer la liste des consultations de planning
+app.get('/api/consultations-planning', async (req, res) => {
+    try {
+        const consultationsSnapshot = await db.collection('consultations_planning').get();
+        const consultations = [];
+        consultationsSnapshot.forEach(doc => {
+            consultations.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(consultations);
+    } catch (error) {
+        console.error('Erreur lecture consultations planning:', error);
+        res.status(500).json({ error: 'Erreur lecture consultations planning' });
+    }
+});
+
+// Route pour récupérer la liste des plannings opérateurs
+app.get('/api/plannings-operateurs', async (req, res) => {
+    try {
+        const planningsSnapshot = await db.collection('plannings_operateurs').get();
+        const plannings = [];
+        planningsSnapshot.forEach(doc => {
+            plannings.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(plannings);
+    } catch (error) {
+        console.error('Erreur lecture plannings opérateurs:', error);
+        res.status(500).json({ error: 'Erreur lecture plannings opérateurs' });
+    }
+});
+
+// Route pour récupérer la liste des envois de planning
+app.get('/api/envois-planning', async (req, res) => {
+    try {
+        const envoisSnapshot = await db.collection('envois_planning').get();
+        const envois = [];
+        envoisSnapshot.forEach(doc => {
+            envois.push({ id: doc.id, ...doc.data() });
+        });
+        res.json(envois);
+    } catch (error) {
+        console.error('Erreur lecture envois planning:', error);
+        res.status(500).json({ error: 'Erreur lecture envois planning' });
+    }
+});
+
+// Affichage dynamique de toutes les routes disponibles (compatibilité Railway)
+try {
+    const listEndpoints = require('express-list-endpoints');
+    const endpoints = listEndpoints(app);
+    console.log('📚 Toutes les routes disponibles :');
+    endpoints.forEach(route => {
+        console.log(`${route.methods.join(', ')} ${route.path}`);
+    });
+} catch (e) {
+    console.warn('express-list-endpoints non installé, routes non listées dynamiquement.');
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 ENCO API Server démarré sur le port ${PORT}`);
   console.log(`📊 Healthcheck: http://localhost:${PORT}/`);
