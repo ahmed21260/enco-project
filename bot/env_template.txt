@@ -6,7 +6,7 @@ BOT_TOKEN=your_telegram_bot_token_here
 TELEGRAM_TOKEN=your_telegram_bot_token_here
 
 # Firebase Configuration
-***REMOVED***
+ENCO_USE_FIRESTORE=1
 FIREBASE_SERVICE_ACCOUNT={"type": "service_account", "project_id": "your-project-id", ...}
 FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
 
