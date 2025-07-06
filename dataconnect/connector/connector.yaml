@@ -1,0 +1,16 @@
+version: 1
+queries:
+  listOperators:
+    sql: |
+      SELECT id, name, shift_start, location FROM operators;
+    result:
+      name: Operator
+      fields:
+        - name: id
+          type: INTEGER
+        - name: name
+          type: STRING
+        - name: shift_start
+          type: TIMESTAMP
+        - name: location
+          type: STRING

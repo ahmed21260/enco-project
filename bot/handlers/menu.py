@@ -24,6 +24,14 @@ from handlers.shared import menu_principal, MAIN_MENU, MAIN_MENU_MARKUP
 # Suppression du MENU_KEYBOARD dupliqué - utilisation de celui de shared.py
 
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return
+    
+    # Vérifier si l'utilisateur est dans un ConversationHandler
+    if hasattr(context, 'user_data') and context.user_data and context.user_data.get('_conversation_state'):
+        # L'utilisateur est dans un ConversationHandler, ne pas interférer
+        return
+    
     text = update.message.text
     if text in ["📌 Prise de poste", "/prise"]:
         await start_prise_wizard(update, context)
