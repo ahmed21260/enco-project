@@ -205,7 +205,7 @@ async def main():
         
         if not results.get("Firebase"):
             print("\n💡 SUGGESTIONS:")
-            print("- Vérifiez ***REMOVED***")
+            print("- Vérifiez ENCO_USE_FIRESTORE=1")
             print("- Vérifiez FIREBASE_SERVICE_ACCOUNT ou serviceAccountKey.json")
         
         if not results.get("Telegram"):

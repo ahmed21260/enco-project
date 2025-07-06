@@ -26,7 +26,7 @@ Utilisateur → Firestore (users/{uid}/messages) → Assistant AI → Réponse e
 OPENAI_API_KEY=sk-...
 
 # Firebase
-***REMOVED***
+ENCO_USE_FIRESTORE=1
 FIREBASE_SERVICE_ACCOUNT={"type": "service_account", ...}
 FIREBASE_STORAGE_BUCKET=enco-prestarail.appspot.com
 ```
@@ -151,7 +151,7 @@ messagesRef.onSnapshot((snapshot) => {
    - Vérifiez la connexion internet
 
 2. **Firestore non initialisé**
-   - Vérifiez `***REMOVED***`
+   - Vérifiez `ENCO_USE_FIRESTORE=1`
    - Vérifiez `FIREBASE_SERVICE_ACCOUNT`
 
 3. **Écouteur ne démarre pas**

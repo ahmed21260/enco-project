@@ -15,7 +15,7 @@ Ce dossier contient les scripts pour configurer, tester et diagnostiquer le webh
 
 ```bash
 BOT_TOKEN=your_telegram_bot_token
-***REMOVED***
+ENCO_USE_FIRESTORE=1
 FIREBASE_SERVICE_ACCOUNT={"type": "service_account", ...}
 FIREBASE_STORAGE_BUCKET=enco-prestarail.firebasestorage.app
 PORT=8080
