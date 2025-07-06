@@ -124,7 +124,7 @@ def get_bon_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("bon", start_bon_wizard),
-            MessageHandler(filters.Regex("^Bon d'attachement$"), start_bon_wizard)
+            MessageHandler(filters.Regex("^📄 Bon d'attachement$"), start_bon_wizard)
         ],
         states={
             UPLOAD_DOC: [MessageHandler(filters.PHOTO | filters.Document.ALL | filters.TEXT, receive_document)],

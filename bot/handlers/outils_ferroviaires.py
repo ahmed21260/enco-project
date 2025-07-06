@@ -280,7 +280,7 @@ def get_outils_ferroviaires_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("outils", start_outils_ferroviaires),
-            MessageHandler(filters.Regex("^Outils ferroviaires / Géoportail SNCF$"), start_outils_ferroviaires)
+            MessageHandler(filters.Regex("^🗺️ Outils ferroviaires$"), start_outils_ferroviaires)
         ],
         states={
             TYPE_RAPPORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type_rapport)],

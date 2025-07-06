@@ -220,7 +220,10 @@ async def cancel_ai_assistant(update: Update, context: ContextTypes.DEFAULT_TYPE
 def get_ai_assistant_handler():
     """Retourne le handler pour l'assistant AI"""
     return ConversationHandler(
-        entry_points=[CommandHandler('ai', start_ai_assistant)],
+        entry_points=[
+            CommandHandler('ai', start_ai_assistant),
+            MessageHandler(filters.Regex("^🤖 Assistant AI$"), start_ai_assistant)
+        ],
         states={
             WAITING_QUESTION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ai_choice)

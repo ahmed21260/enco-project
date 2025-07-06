@@ -19,14 +19,9 @@ from PIL import Image
 import os
 from handlers.photo import start_photo
 import requests
-from handlers.shared import menu_principal
+from handlers.shared import menu_principal, MAIN_MENU
 
-MENU_KEYBOARD = [
-    ["📌 Prise de poste", "📷 Envoyer une photo"],
-    ["📄 Bon d'attachement", "🛑 URGENCE / INCIDENT"],
-    ["🔧 Déclarer une panne", "🗺️ Outils ferroviaires"],
-    ["🤖 Assistant AI", "🗓️ Planning"]
-]
+# Suppression du MENU_KEYBOARD dupliqué - utilisation de celui de shared.py
 
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text

@@ -32,6 +32,11 @@ async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response("Aide demandée pour l'étape type d'urgence.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return TYPE
     context.user_data['urgence_type'] = update.message.text
     
     # Afficher les numéros d'urgence selon le type
@@ -41,7 +46,11 @@ async def receive_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🚨 **{update.message.text}**\n\n"
         f"Décris l'urgence ou ajoute une photo (optionnel, tape 'skip' pour passer) :\n\n"
         f"📞 **Numéros d'urgence :**\n"
-        f"{numeros_urgence}"
+        f"{numeros_urgence}",
+        reply_markup=ReplyKeyboardMarkup([
+            ["Envoyer un message d'urgence"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True)
     )
     logging.info(f"[URGENCE] Type sélectionné: {update.message.text} pour user {update.effective_user.id}")
     return MESSAGE
@@ -66,6 +75,11 @@ async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response("Aide demandée pour l'étape message d'urgence.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return MESSAGE
     if update.message.text and update.message.text.lower() == 'skip':
         context.user_data['urgence_message'] = ''
     else:
@@ -74,10 +88,10 @@ async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📍 **Envoie ta localisation GPS (obligatoire)** :\n\n"
         "Cette position sera transmise immédiatement à l'encadrement.",
-        reply_markup=ReplyKeyboardMarkup(
-            [[KeyboardButton("📍 Envoyer ma position", request_location=True)]],
-            one_time_keyboard=True, resize_keyboard=True
-        )
+        reply_markup=ReplyKeyboardMarkup([
+            [KeyboardButton("📍 Envoyer ma position", request_location=True)],
+            ["🤖 Aide IA"]
+        ], one_time_keyboard=True, resize_keyboard=True)
     )
     logging.info(f"[URGENCE] Message reçu pour user {update.effective_user.id}")
     return GPS
@@ -85,6 +99,11 @@ async def receive_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_user:
         return ConversationHandler.END
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response("Aide demandée pour l'étape GPS d'urgence.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return GPS
     if not update.message.location:
         await update.message.reply_text("❗ Localisation obligatoire pour signaler une urgence.")
         return GPS
@@ -103,7 +122,11 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📍 Position : {update.message.location.latitude:.4f}, {update.message.location.longitude:.4f}\n\n"
         f"📞 **Numéros d'urgence :**\n"
         f"{numeros_urgence}\n\n"
-        f"✅ Confirme l'envoi de l'urgence ? (oui/non)"
+        f"✅ Confirme l'envoi de l'urgence ? (oui/non)",
+        reply_markup=ReplyKeyboardMarkup([
+            ["oui", "non"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True)
     )
     logging.info(f"[URGENCE] Localisation reçue pour user {update.effective_user.id}")
     return CONFIRM
@@ -113,11 +136,22 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
+    if update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
+        assistant = ENCOAIAssistant()
+        suggestion = await assistant.generate_railway_response("Aide demandée pour l'étape confirmation d'urgence.")
+        await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
+        return CONFIRM
     if not update.message.text:
-        await update.message.reply_text("Merci de répondre par 'oui' pour confirmer l'urgence.")
+        await update.message.reply_text("Merci de répondre par 'oui' pour confirmer l'urgence.", reply_markup=ReplyKeyboardMarkup([
+            ["oui", "non"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True))
         return CONFIRM
     if update.message.text.lower() != "oui":
-        await update.message.reply_text("❌ Signalement annulé.")
+        await update.message.reply_text("❌ Signalement annulé.", reply_markup=ReplyKeyboardMarkup([
+            ["Menu principal"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True))
         logging.info(f"[URGENCE] Annulée pour user {update.effective_user.id}")
         return ConversationHandler.END
     
@@ -197,13 +231,12 @@ def get_urgence_wizard_handler():
     return ConversationHandler(
         entry_points=[
             CommandHandler("urgence", start_urgence_wizard),
-            MessageHandler(filters.Regex("^URGENCE SNCF$"), start_urgence_wizard),
             MessageHandler(filters.Regex("^🛑 URGENCE / INCIDENT$"), start_urgence_wizard)
         ],
         states={
             TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_type)],
             MESSAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_message)],
-            GPS: [MessageHandler(filters.LOCATION, receive_gps)],
+            GPS: [MessageHandler(filters.LOCATION | filters.TEXT, receive_gps)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_urgence)],
         },
         fallbacks=[]
