@@ -2,6 +2,7 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
 from utils.firestore import save_urgence, db
 from datetime import datetime
+from services.enco_ai_assistant import ai_assistant
 
 TYPE, MESSAGE, GPS, CONFIRM = range(4)
 
@@ -113,27 +114,45 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "lng": loc.longitude
         }
     }
-    
-    # Sauvegarder dans Firestore
-    save_urgence(urgence_data)
-    
-    # Message de confirmation avec numéros d'urgence
-    numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
-    
-    await update.message.reply_text(
-        f"\u2705 **URGENCE ENREGISTR\u00c9E ET TRANSMISE !**\n\n"
-        f"\ud83d\udea8 L'encadrement a \u00e9t\u00e9 notifi\u00e9 imm\u00e9diatement.\n"
-        f"\ud83d\udccd Ta position a \u00e9t\u00e9 transmise.\n\n"
-        f"\ud83d\udcde **Num\u00e9ros d'urgence :**\n"
-        f"{numeros_urgence}\n\n"
-        f"\ud83d\udd04 Reste en contact avec l'encadrement.",
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                ["Menu principal", "Signaler une autre urgence"],
-                ["Signaler une anomalie", "Envoyer photo en cours de mission"]
-            ], resize_keyboard=True
+    # Enrichissement IA si possible
+    if ai_assistant and ai_assistant.client:
+        try:
+            priority_info = ai_assistant.prioritize_urgence(urgence_data["description"])
+            urgence_data["ai_priority"] = priority_info.get("priority")
+            urgence_data["ai_reason"] = priority_info.get("reason")
+            urgence_data["ai_immediate_action"] = priority_info.get("immediate_action")
+        except Exception as e:
+            print(f"[IA] Erreur enrichissement IA urgence: {e}")
+    # Sauvegarder dans Firestore avec gestion d'erreur
+    try:
+        save_urgence(urgence_data)
+        log_msg = f"[URGENCE] Enregistrée pour {user.full_name} ({user.id}) : {urgence_data['type']}"
+        print(log_msg)
+        # Message de confirmation avec numéros d'urgence
+        numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
+        await update.message.reply_text(
+            f"\u2705 **URGENCE ENREGISTR\u00c9E ET TRANSMISE !**\n\n"
+            f"\ud83d\udea8 L'encadrement a \u00e9t\u00e9 notifi\u00e9 imm\u00e9diatement.\n"
+            f"\ud83d\udccd Ta position a \u00e9t\u00e9 transmise.\n\n"
+            f"\ud83d\udcde **Num\u00e9ros d'urgence :**\n"
+            f"{numeros_urgence}\n\n"
+            f"\ud83d\udd04 Reste en contact avec l'encadrement.",
+            reply_markup=ReplyKeyboardMarkup(
+                [
+                    ["Menu principal", "Signaler une autre urgence"],
+                    ["Signaler une anomalie", "Envoyer photo en cours de mission"]
+                ], resize_keyboard=True
+            )
         )
-    )
+    except Exception as e:
+        print(f"[URGENCE] Erreur Firestore: {e}")
+        await update.message.reply_text(
+            "❌ Erreur lors de l'enregistrement de l'urgence. Merci de réessayer ou contacter un admin.",
+            reply_markup=ReplyKeyboardMarkup(
+                [["Menu principal"]], resize_keyboard=True
+            )
+        )
+        return ConversationHandler.END
     # Ajout : gestion du retour menu principal
     if update.message.text == "Menu principal":
         from handlers.menu import start

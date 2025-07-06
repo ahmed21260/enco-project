@@ -24,7 +24,7 @@ MENU_KEYBOARD = [
     ["📌 Prise de poste", "📷 Envoyer une photo"],
     ["📄 Bon d'attachement", "🛑 URGENCE / INCIDENT"],
     ["🔧 Déclarer une panne", "🗺️ Outils ferroviaires"],
-    ["🗓️ Planning"]
+    ["🤖 Assistant AI", "🗓️ Planning"]
 ]
 
 async def menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,6 +65,9 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_photo(update, context)
     elif text == "🗓️ Planning":
         await start_planning_wizard(update, context)
+    elif text == "🤖 Assistant AI":
+        from handlers.ai_assistant import start_ai_assistant
+        await start_ai_assistant(update, context)
     else:
         # Pour tout texte non reconnu, retour à l'accueil immersif
         await start(update, context)

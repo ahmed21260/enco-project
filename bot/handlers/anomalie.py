@@ -2,6 +2,7 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
 from utils.firestore import save_anomalie, db
 from datetime import datetime
+from services.enco_ai_assistant import ai_assistant
 
 MACHINE, TYPE_ANOMALIE, DESCRIPTION, PHOTO, GPS, CONFIRM = range(6)
 
@@ -169,14 +170,28 @@ async def confirm_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "handled": False,
         "urgence_level": "NORMAL"
     }
-    
+    # Enrichissement IA si possible
+    ai_feedback = ""
+    if ai_assistant and ai_assistant.client:
+        try:
+            ai_category = ai_assistant.categorize_anomalie(anomalie_data["description"])
+            ai_priority = ai_assistant.prioritize_urgence(anomalie_data["description"])
+            ai_suggestion = ai_assistant.suggest_anomalie_resolution(anomalie_data["description"])
+            anomalie_data["ai_category"] = ai_category
+            anomalie_data["ai_priority"] = ai_priority.get('priority')
+            anomalie_data["ai_reason"] = ai_priority.get('reason')
+            anomalie_data["ai_immediate_action"] = ai_priority.get('immediate_action')
+            anomalie_data["ai_suggestion"] = ai_suggestion
+            ai_feedback = f"\n\n🏷️ Catégorie IA : {ai_category or 'Non catégorisée'}\n⚠️ Priorité IA : {ai_priority.get('priority', 'N/A').upper()}\n💡 Suggestion IA : {ai_suggestion or 'Aucune'}"
+        except Exception as e:
+            print(f"[IA] Erreur enrichissement IA anomalie: {e}")
     save_anomalie(anomalie_data)
-    
     await update.message.reply_text(
         f"\u2705 **ANOMALIE ENREGISTR\u00c9E !**\n\n"
         f"\ud83d\udd27 L'anomalie a \u00e9t\u00e9 transmise \u00e0 l'encadrement.\n"
         f"\ud83d\udcf8 Photo et position enregistr\u00e9es.\n"
-        f"\ud83d\udd04 Tu seras contact\u00e9 pour le suivi.",
+        f"\ud83d\udd04 Tu seras contact\u00e9 pour le suivi."
+        f"{ai_feedback}",
         reply_markup=ReplyKeyboardMarkup(
             [
                 ["Menu principal", "D\u00e9clarer une autre anomalie"],

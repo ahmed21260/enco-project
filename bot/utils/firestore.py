@@ -118,14 +118,19 @@ def save_anomalie(data):
 # --- URGENCES ---
 def save_urgence(data):
     if USE_FIRESTORE and db:
-        db.collection('incidents').add(data)
+        try:
+            db.collection('urgences').add(data)
+            print("✅ Urgence enregistrée dans la collection 'urgences'")
+        except Exception as e:
+            print(f"❌ Erreur Firestore lors de l'enregistrement de l'urgence: {e}")
+            raise
     else:
         print(f"🚨 Urgence sauvegardée (mode test): {data}")
         try:
             with open(os.path.join(BASE_DIR, '../urgences_temp.json'), 'a') as f:
                 f.write(json.dumps(data) + '\n')
-        except:
-            pass
+        except Exception as e:
+            print(f"❌ Erreur sauvegarde urgence temp: {e}")
 
 # --- HISTORIQUE ---
 def get_historique(operateur_id, limit=10):
