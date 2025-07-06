@@ -4,9 +4,6 @@ import os
 import asyncio
 import logging
 print("=== Imports standards OK ===")
-from dotenv import load_dotenv
-load_dotenv()
-print("=== dotenv chargé ===")
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 print("=== Imports telegram OK ===")
 from handlers.menu import menu_principal, handle_menu, start
