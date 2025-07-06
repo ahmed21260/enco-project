@@ -171,20 +171,27 @@ async def handle_historique_admin(update: Update, context: ContextTypes.DEFAULT_
     await afficher_historique(update, context)
 
 async def handle_all_text_to_firestore(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler universel pour tous les messages texte - log dans Firestore + IA"""
+    """Handler IA : ne répond que sur trigger explicite 'Aide IA' et adapte le prompt au métier opérateur ferroviaire."""
     if not update.message or not update.effective_user:
         return
-    
-    user_id = str(update.effective_user.id)
-    prompt = update.message.text
-    
-    if not prompt:
+
+    # Sécurité métier : ne traiter que les messages explicites d'aide IA
+    if update.message.text not in ["🤖 Aide IA", "💬 Aide IA"]:
         return
-    
+
+    user_id = str(update.effective_user.id)
+    prompt = (
+        "Tu es une IA assistant un opérateur ferroviaire ENCO. "
+        "Sois ultra concret, donne des conseils sécurité, logistique, administratif, technique, adaptés au terrain ferroviaire. "
+        "Réponds toujours dans le contexte métier d’un conducteur rail-route ou d’un agent ENCO. "
+        "Sois synthétique, pratique, et jamais hors sujet métier."
+    )
+    # Optionnel : tu peux enrichir avec le contexte utilisateur si besoin
+
     # Log détaillé
-    logger.info(f"[MESSAGE] User {user_id} ({update.effective_user.full_name}): {prompt}")
-    print(f"[MESSAGE] User {user_id} ({update.effective_user.full_name}): {prompt}")
-    
+    logger.info(f"[MESSAGE] User {user_id} ({update.effective_user.full_name}): {update.message.text}")
+    print(f"[MESSAGE] User {user_id} ({update.effective_user.full_name}): {update.message.text}")
+
     # Enregistrer dans Firestore si disponible
     if db:
         try:
@@ -199,17 +206,15 @@ async def handle_all_text_to_firestore(update: Update, context: ContextTypes.DEF
                 }
             })
             logger.info(f"[FIRESTORE] Message enregistré pour user {user_id}")
-            
-            # Envoyer message "en attente IA"
-            await update.message.reply_text("🤖 **Message reçu, IA en cours d'analyse...**")
-            
+
+            await update.message.reply_text("🤖 **Message reçu, IA ENCO en cours d'analyse métier...**")
+
             # Appel IA asynchrone
             try:
                 assistant = ENCOAIAssistant()
                 if assistant.client:
                     response = await assistant.generate_railway_response(prompt)
                     if response:
-                        # Mettre à jour Firestore avec la réponse
                         message_ref[1].update({
                             'response': response,
                             'status': {
@@ -217,17 +222,16 @@ async def handle_all_text_to_firestore(update: Update, context: ContextTypes.DEF
                                 'updated_at': datetime.now().isoformat()
                             }
                         })
-                        # Envoyer la réponse IA
-                        await update.message.reply_text(f"💡 **Réponse IA :**\n{response}")
+                        await update.message.reply_text(f"💡 **Réponse IA métier ENCO :**\n{response}")
                         logger.info(f"[IA] Réponse envoyée à user {user_id}")
                     else:
-                        await update.message.reply_text("❌ Désolé, je n'ai pas pu générer de réponse.")
+                        await update.message.reply_text("❌ Désolé, je n'ai pas pu générer de réponse métier.")
                 else:
                     await update.message.reply_text("⚠️ Assistant IA temporairement indisponible.")
             except Exception as e:
                 logger.error(f"[IA] Erreur génération réponse: {e}")
-                await update.message.reply_text("❌ Erreur lors de la génération de la réponse IA.")
-                
+                await update.message.reply_text("❌ Erreur lors de la génération de la réponse IA métier.")
+
         except Exception as e:
             logger.error(f"[FIRESTORE] Erreur enregistrement message: {e}")
     else:
@@ -376,6 +380,17 @@ def main():
     # Ajouter un handler universel pour les messages texte (IA + Firestore)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_all_text_to_firestore), group=2)
     
+    # Handler IA : uniquement si le message est exactement “🤖 Aide IA” ou “💬 Aide IA”
+    application.add_handler(
+        MessageHandler(filters.Regex(r"^(🤖|💬) Aide IA$"), handle_all_text_to_firestore),
+        group=2
+    )
+
+    # Handler menu / logique métier normale
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu)
+    )
+    
     # Ajouter un handler de test
     application.add_handler(CommandHandler("test", test_handler))
     application.add_handler(CommandHandler("ping", ping))
@@ -407,9 +422,6 @@ def main():
         if update.message:
             await update.message.reply_text("🗣️ Messages vocaux temporairement désactivés.")
     application.add_handler(MessageHandler(filters.VOICE, handle_voice_disabled))
-
-    # Ajouter le handler de texte général en dernier (logique métier du menu)
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 
     logger.info(f"✅ Bot ENCO démarré et en écoute sur Telegram en mode webhook sur le port {PORT} !")
     print(f"✅ Bot ENCO démarré et en écoute sur Telegram en mode webhook sur le port {PORT} !")
