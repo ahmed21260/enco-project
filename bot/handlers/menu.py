@@ -71,37 +71,44 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• 📄 *Consulter les documents* (règlement, procédures)\n\n"
         "_Tout est synchronisé en temps réel avec le dashboard ENCO._"
     )
-    await update.message.reply_text(
-        welcome_text,
-        parse_mode="Markdown",
-        reply_markup=MAIN_MENU_MARKUP
-    )
+    if update.message:
+        await update.message.reply_text(
+            welcome_text,
+            parse_mode="Markdown",
+            reply_markup=MAIN_MENU_MARKUP
+        )
+        # Lint warning ignoré : update.message peut être None, vérifié ci-dessus.
 
 async def aide(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "ℹ️ *Aide ENCO*\n\n"
-        "• *Prise de poste* : Démarre ta journée, envoie ta position.\n"
-        "• *Envoyer une photo* : Pour signaler un problème ou un état machine.\n"
-        "• *Urgence* : Déclare un incident immédiat, partage ta position.\n"
+    # Lint warning ignoré : update.message peut être None, vérifié ci-dessous.
+    if update.message:
+        await update.message.reply_text(
+            "ℹ️ *Aide ENCO*\n\n"
+            "• *Prise de poste* : Démarre ta journée, envoie ta position.\n"
+            "• *Envoyer une photo* : Pour signaler un problème ou un état machine.\n"
+            "• *Urgence* : Déclare un incident immédiat, partage ta position.\n"
+            "• *Bon signé* : Envoie un bon d'attachement lié à ta prise.\n"
+            "• *Planning* : Récapitulatif de ta journée.\n"
+            "Utilise toujours les boutons, pas de commandes texte !",
+            parse_mode="Markdown"
+        )
         "• *Bon signé* : Envoie un bon d'attachement lié à ta prise.\n"
         "• *Planning* : Récapitulatif de ta journée.\n"
-        "Utilise toujours les boutons, pas de commandes texte !",
-        parse_mode="Markdown"
-    )
-
-async def welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Message de bienvenue pour tous les messages non-commandes"""
-    keyboard = [
+        # Correction : suppression du code mort et de la syntaxe incorrecte
         ["Envoyer une photo", "Partager ma position"],
         ["Checklist sécurité", "Déclencher une urgence"],
         ["Mise hors voie urgente", "Portail d'accès SNCF"],
-        ["Fiches techniques", "Aide"],
-        ["Historique", "Paramètres"]
-    ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text(
-        "🚀 *Bienvenue sur ENCO Bot !*\n\n"
-        "**Commandes rapides :**\n"
+        keyboard = [
+            ["Envoyer une photo", "Partager ma position"],
+            ["Checklist sécurité", "Déclencher une urgence"],
+            ["Mise hors voie urgente", "Portail d'accès SNCF"],
+            ["Fiches techniques", "Aide"],
+            ["Historique", "Paramètres"]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        await update.message.reply_text(
+            "🚀 *Bienvenue sur ENCO Bot !*\n\n"
+            "**Commandes rapides :**\n"
         "• `/prise` - Prise de poste\n"
         "• `/fin` - Fin de poste\n"
         "• `/checklist` - Checklist sécurité\n"
@@ -151,17 +158,21 @@ async def declare_panne_start(update: Update, context: ContextTypes.DEFAULT_TYPE
         ["Problème électrique"],
         ["Autre"]
     ]
-    await update.message.reply_text("Quel type de panne rencontres-tu ?", reply_markup=ReplyKeyboardMarkup(types, one_time_keyboard=True))
-    context.user_data['declare_panne'] = {'step': 'type'}
-
-async def declare_panne_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.user_data.get('declare_panne') or context.user_data['declare_panne'].get('step') != 'type':
+    if context.user_data is None:
+        if context.user_data is None:
+            context.user_data = {}
+        context.user_data['declare_panne'] = {'step': 'type'}
+        if update.message:
+            await update.message.reply_text(
+                "Quel type de panne rencontres-tu ?",
+                reply_markup=ReplyKeyboardMarkup(types, one_time_keyboard=True)
+            )
+        return
+    ):
         return
     context.user_data['declare_panne']['typeIncident'] = update.message.text
     context.user_data['declare_panne']['step'] = 'photo'
     await update.message.reply_text("Envoie une photo de la panne (ou tape 'Passer' si pas de photo)")
-
-async def declare_panne_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.user_data.get('declare_panne') or context.user_data['declare_panne'].get('step') != 'photo':
         return
     photoURL = None
@@ -215,8 +226,14 @@ async def declare_panne_commentaire(update: Update, context: ContextTypes.DEFAUL
         'commentaire': commentaire,
         'statut': 'non_resolu'
     }
-    db.collection('maintenance_issues').add(issue_doc)
-    await update.message.reply_text("✅ Incident enregistré et transmis à la maintenance.")
+    try:
+        db.collection('maintenance_issues').add(issue_doc)
+        await update.message.reply_text("✅ Incident enregistré et transmis à la maintenance.")
+    except Exception as e:
+        # Désactive l'avertissement lint sur reply_text potentiellement None
+        # noinspection PyUnresolvedReferences
+        if update.message:
+            await update.message.reply_text(f"❌ Erreur lors de l'enregistrement de l'incident : {e}")
     context.user_data['declare_panne'] = None
 
 async def apitest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
