@@ -1,13 +1,13 @@
 # Fichiers sensibles Firebase
+bot/serviceAccountKey.json
 bot/firebase_credential.json
 bot/firebase_credentials.json
-bot/serviceAccountKey.json
 bot/firebase_credential*.json
 bot/serviceAccountKey*.json
 bot/firebase_credential*.txt
 bot/serviceAccountKey*.txt
 
-# Autres secrets potentiels
+# Autres secrets
 bot/secret/
 bot/*.log
 bot/*.env
