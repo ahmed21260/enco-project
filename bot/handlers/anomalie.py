@@ -209,13 +209,35 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
     context.user_data['gps'] = update.message.location
-    
+
+    # --- AJOUT : Enregistrement immédiat de l'anomalie pour ping ---
+    user = update.effective_user
+    from datetime import datetime
+    anomalie_data = {
+        "operateur_id": user.id,
+        "operatorId": user.id,
+        "nom": user.full_name,
+        "timestamp": datetime.now().isoformat(),
+        "machine": context.user_data.get('machine', ''),
+        "type_anomalie": context.user_data.get('type_anomalie', ''),
+        "anomalie_specifique": context.user_data.get('anomalie_specifique', ''),
+        "description": context.user_data.get('description', ''),
+        "latitude": update.message.location.latitude,
+        "longitude": update.message.location.longitude,
+        "photo_file_id": context.user_data.get('photo'),
+        "handled": False,
+        "urgence_level": "NORMAL",
+        "ping": True,  # Pour différencier les pings immédiats
+        "statut": "en_attente_confirmation"
+    }
+    save_anomalie(anomalie_data)
+
     # Récapitulatif
     machine = context.user_data.get('machine', '')
     type_anomalie = context.user_data.get('type_anomalie', '')
     anomalie_specifique = context.user_data.get('anomalie_specifique', '')
     description = context.user_data.get('description', 'Aucune')
-    
+
     await update.message.reply_text(
         f"🔧 **Récapitulatif Anomalie**\n\n"
         f"🚜 Machine : {machine}\n"
@@ -266,6 +288,9 @@ async def confirm_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "latitude": loc.latitude,
         "longitude": loc.longitude,
         "photo_file_id": context.user_data.get('photo'),
+        "photoURL": context.user_data.get('photo_url', None),
+        "urlPhoto": context.user_data.get('photo_url', None),
+        "url": context.user_data.get('photo_url', None),
         "handled": False,
         "urgence_level": "NORMAL"
     }

@@ -1,6 +1,15 @@
 # redeploy trigger 2025-07-04
 print("=== Début du script main.py ===")
+import sys
 import os
+# --- FLUSH LOGS IMMEDIAT ---
+os.environ["PYTHONUNBUFFERED"] = "1"
+# Charger le .env AVANT tout import local
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Pas grave si python-dotenv n'est pas installé en prod
 import asyncio
 import logging
 print("=== Imports standards OK ===")
@@ -31,12 +40,6 @@ from firebase_admin import credentials
 import json
 from datetime import datetime
 print("=== Imports handlers et services OK ===")
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # Pas grave si python-dotenv n'est pas installé en prod
 
 # Configuration logging robuste
 logging.basicConfig(
@@ -267,34 +270,48 @@ def schedule_reminders():
 async def on_startup(app):
     logger.info("=== on_startup appelé ===")
     print("=== on_startup appelé ===")
+    sys.stdout.flush()
     scheduler = schedule_reminders()
     scheduler.start()
-    logger.info("🕖 Scheduler des rappels quotidiens démarré !")
+    logger.info("\U0001F551 Scheduler des rappels quotidiens démarré !")
     
     # Démarrer l'écouteur Firestore pour le chatbot
     if os.getenv('ENCO_USE_FIRESTORE', '0') == '1' and db:
         try:
             assistant = ENCOAIAssistant()
             if assistant.client:
-                watch = assistant.start_firestore_listener()
+                watch = assistant.start_firestore_listener() if hasattr(assistant, 'start_firestore_listener') else None
                 if watch:
                     logger.info("✅ Écouteur Firestore chatbot démarré !")
                     print("✅ Écouteur Firestore chatbot démarré !")
+                    sys.stdout.flush()
                 else:
-                    logger.warning("⚠️ Impossible de démarrer l'écouteur Firestore")
-                    print("⚠️ Impossible de démarrer l'écouteur Firestore")
-            else:
-                logger.warning("⚠️ Assistant AI non disponible - écouteur Firestore non démarré")
-                print("⚠️ Assistant AI non disponible - écouteur Firestore non démarré")
+                    logger.warning("⚠️ Impossible de démarrer l'écouteur Firestore (assistant)")
+                    print("⚠️ Impossible de démarrer l'écouteur Firestore (assistant)")
+                    sys.stdout.flush()
+            # --- AJOUT LISTENER FIRESTORE ULTRA RAPIDE ---
+            from google.cloud import firestore
+            def on_snapshot(doc_snapshot, changes, read_time):
+                print("🔥 [BOT] Firestore event reçu !")
+                for change in changes:
+                    print(f"Type: {change.type.name}, Data: {change.document.to_dict()}")
+                sys.stdout.flush()
+            col_query = db.collection("prises_de_poste")
+            col_query.on_snapshot(on_snapshot)
+            print("✅ Listener Firestore ajouté sur 'prises_de_poste'")
+            sys.stdout.flush()
         except Exception as e:
             logger.error(f"❌ Erreur démarrage écouteur Firestore: {e}")
             print(f"❌ Erreur démarrage écouteur Firestore: {e}")
+            sys.stdout.flush()
     else:
         logger.info("ℹ️ Écouteur Firestore non démarré (Firebase désactivé)")
         print("ℹ️ Écouteur Firestore non démarré (Firebase désactivé)")
+        sys.stdout.flush()
     
     logger.info("🚀 Webhook initialisé : %s", WEBHOOK_URL)
     print(f"🚀 Webhook initialisé : {WEBHOOK_URL}")
+    sys.stdout.flush()
 
 async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("=== prompt_photo appelé ===")
@@ -391,7 +408,7 @@ def main():
         MessageHandler(filters.Regex(r"^(🤖|💬) Aide IA$"), handle_all_text_to_firestore),
         group=2
     )
-
+    
     # Ajouter un handler de test
     application.add_handler(CommandHandler("test", test_handler))
     application.add_handler(CommandHandler("ping", ping))

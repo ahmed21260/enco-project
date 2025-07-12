@@ -210,6 +210,8 @@ async def declare_panne_commentaire(update: Update, context: ContextTypes.DEFAUL
         'machineId': machineId,
         'typeIncident': context.user_data['declare_panne']['typeIncident'],
         'photoURL': context.user_data['declare_panne'].get('photoURL'),
+        'urlPhoto': context.user_data['declare_panne'].get('photoURL'),
+        'url': context.user_data['declare_panne'].get('photoURL'),
         'commentaire': commentaire,
         'statut': 'non_resolu'
     }

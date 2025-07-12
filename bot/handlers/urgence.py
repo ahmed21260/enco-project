@@ -197,7 +197,7 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
         log_msg = f"[URGENCE] Enregistrée pour {user.full_name} ({user.id}) : {urgence_data['type']}"
         logging.info(log_msg)
         print(log_msg)
-        
+
         # Message de confirmation avec numéros d'urgence
         numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
         await update.message.reply_text(

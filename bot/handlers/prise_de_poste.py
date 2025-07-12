@@ -4,6 +4,9 @@ from utils.firestore import save_position, db
 from services.enco_ai_assistant import ENCOAIAssistant
 import logging
 from handlers.shared import menu_principal, build_ai_prompt
+import os
+from PIL import Image
+from utils.firestore import upload_photo_to_storage
 
 GPS, CHANTIER, MACHINE, PHOTOS, CHECKLIST, CONFIRM = range(6)
 
@@ -120,13 +123,42 @@ async def receive_photos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return PHOTOS
     idx = context.user_data.get('photo_index', 0)
     reply_markup = ReplyKeyboardMarkup([
-        [f"Envoie la {PHOTO_LABELS[idx]}"],
+        [f"Envoie la {PHOTO_LABELS[idx]}"] ,
         ["🤖 Aide IA"]
     ], resize_keyboard=True)
     if not update.message.photo:
         await update.message.reply_text(f"❗ Envoie la {PHOTO_LABELS[idx]}.", reply_markup=reply_markup)
         return PHOTOS
-    context.user_data['photos'].append(update.message.photo[-1].file_id)
+
+    # --- AJOUT : Sauvegarde et upload de la photo ---
+    user = update.effective_user
+    photo = update.message.photo[-1]
+    file = await context.bot.get_file(photo.file_id)
+    local_dir = f"bot/photos/{user.id}"
+    os.makedirs(local_dir, exist_ok=True)
+    file_name = f"{user.id}_prise_{idx}_{update.message.date.strftime('%Y%m%d_%H%M%S')}.jpg"
+    file_path = f"{local_dir}/{file_name}"
+    await file.download_to_drive(file_path)
+
+    # Optimisation image (optionnel)
+    try:
+        with Image.open(file_path) as img:
+            img.thumbnail((1024, 1024))
+            img.save(file_path, "JPEG")
+    except Exception as e:
+        print(f"Erreur resize: {e}")
+
+    firebase_path = f"prises_poste/{user.id}/{file_name}"
+    print(f"Appel upload_photo_to_storage avec {file_path} -> {firebase_path}")
+    photo_url = upload_photo_to_storage(file_path, firebase_path)
+    print(f"Résultat upload : {photo_url}")
+
+    # Stocke le file_id ET l'URL
+    context.user_data['photos'].append(photo.file_id)
+    if 'photos_urls' not in context.user_data:
+        context.user_data['photos_urls'] = []
+    context.user_data['photos_urls'].append(photo_url)
+
     idx += 1
     context.user_data['photo_index'] = idx
     if idx < 4:
@@ -235,6 +267,7 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "chantier": context.user_data.get('chantier', ''),
         "machine": context.user_data.get('machine', ''),
         "photos_file_ids": context.user_data.get('photos', []),
+        "photos_urls": context.user_data.get('photos_urls', []),
         "actif": True,
         "checklist": context.user_data.get('checklist', {}),
         "checklistEffectuee": True
@@ -249,6 +282,9 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "chantier": context.user_data.get('chantier', ''),
         "machine": context.user_data.get('machine', ''),
         "photos_file_ids": context.user_data.get('photos', []),
+        "photos_urls": context.user_data.get('photos_urls', []),
+        "urlPhoto": context.user_data.get('photos_urls', [None])[0],
+        "url": context.user_data.get('photos_urls', [None])[0],
         "type": "prise_de_poste",
         "checklist": context.user_data.get('checklist', {}),
         "checklistEffectuee": True
