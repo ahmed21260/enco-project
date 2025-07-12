@@ -1,0 +1,71 @@
+type User @table {
+  displayName: String!
+  email: String!
+  role: String!
+  createdAt: Timestamp!
+  photoUrl: String
+}
+
+type Operator @table {
+  employeeId: String!
+  firstName: String!
+  lastName: String!
+  createdAt: Timestamp!
+  contactNumber: String
+  qualifications: String
+  photoUrl: String
+  status: String
+  updatedAt: Timestamp
+}
+
+type Shift @table {
+  operator: Operator!
+  startTime: Timestamp!
+  endTime: Timestamp!
+  status: String!
+  createdAt: Timestamp!
+  actualStartTime: Timestamp
+  actualEndTime: Timestamp
+  assignedMachineIdentifier: String
+  startLocationNotes: String
+  endLocationNotes: String
+  notes: String
+  updatedAt: Timestamp
+}
+
+type LocationLog @table {
+  shift: Shift!
+  latitude: Float!
+  longitude: Float!
+  timestamp: Timestamp!
+  accuracy: Float
+}
+
+type TechnicalReport @table {
+  operator: Operator!
+  shift: Shift
+  title: String!
+  description: String!
+  reportType: String!
+  reportDate: Timestamp!
+  createdAt: Timestamp!
+  status: String
+  locationLatitude: Float
+  locationLongitude: Float
+  updatedAt: Timestamp
+}
+
+type Incident @table {
+  operator: Operator
+  shift: Shift
+  incidentType: String!
+  description: String!
+  severity: String!
+  incidentDate: Timestamp!
+  createdAt: Timestamp!
+  status: String
+  resolutionNotes: String
+  locationLatitude: Float
+  locationLongitude: Float
+  updatedAt: Timestamp
+}

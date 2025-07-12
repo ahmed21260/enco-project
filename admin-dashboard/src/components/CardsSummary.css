@@ -1,0 +1,32 @@
+.cards-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.card-summary {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border-radius: 10px;
+  padding: 1.2rem 2rem;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  transition: box-shadow 0.2s;
+}
+.card-summary:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
+.card-icon {
+  font-size: 2.2rem;
+  margin-right: 1.2rem;
+}
+.card-title {
+  font-size: 1rem;
+  color: #555;
+}
+.card-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #222;
+} 
