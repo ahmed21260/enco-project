@@ -98,7 +98,8 @@ async def confirm_bon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "description": context.user_data['description'],
         "file_id": context.user_data['file_id'],
         "file_type": context.user_data['file_type'],
-        "type": "bon_attachement"
+        "type": "bon_attachement",
+        "urlDocument": context.user_data['file_url'] if context.user_data.get('file_type') == 'photo' else None
     }
     
     try:

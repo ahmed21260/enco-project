@@ -30,7 +30,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Traitement de la photo
         photo = update.message.photo[-1]
         file = await context.bot.get_file(photo.file_id)
-        
+
         # Créer le dossier local
         user = update.effective_user
         if not user:
@@ -45,7 +45,7 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Télécharger et optimiser
         await file.download_to_drive(file_path)
-        
+
         # Optimiser l'image
         try:
             with Image.open(file_path) as img:
@@ -53,18 +53,19 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 img.save(file_path, "JPEG")
         except Exception as e:
             print(f"Erreur resize: {e}")
-        
+
         # Upload vers Firebase Storage
-        from utils.firestore import upload_photo_to_storage
         storage_path = f"photos/{user.id}/{file_name}"
         photoURL = upload_photo_to_storage(file_path, storage_path)
-        
+
         # Enregistrer dans Firestore
         photo_data = {
             "operatorId": user.id,
             "operatorName": user.full_name,
             "timestamp": update.message.date.isoformat(),
             "photoURL": photoURL,
+            "urlPhoto": photoURL,
+            "url": photoURL,
             "description": context.user_data.get('description', ''),
             "type": "photo_mission"
         }
