@@ -352,10 +352,9 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update, context):
     logger.error("=== error_handler appelé ===")
     print("=== error_handler appelé ===")
-    """Gestionnaire d'erreur global"""
     error_msg = str(context.error) if context.error else "Unknown error"
-    
-    # Ignorer les erreurs de parsing des requêtes non-Telegram
+
+    # Ignore les erreurs de parsing des requêtes non-Telegram (Railway, etc.)
     if any(keyword in error_msg for keyword in [
         "unexpected keyword argument 'type'",
         "missing 1 required positional argument: 'update_id'",
@@ -364,7 +363,7 @@ async def error_handler(update, context):
         logger.warning("🚫 Requête non-Telegram ignorée (Railway notification)")
         print("🚫 Requête non-Telegram ignorée (Railway notification)")
         return
-    
+
     # Log des autres erreurs
     logger.error(f"❌ Erreur lors du traitement d'un update: {error_msg}")
     print(f"❌ Erreur lors du traitement d'un update: {error_msg}")
