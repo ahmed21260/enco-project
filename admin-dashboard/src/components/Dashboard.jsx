@@ -77,7 +77,7 @@ const createAlertIcon = (type) => {
   });
 };
 
-const Dashboard = () => {
+const Dashboard = ({ onLogout, user }) => {
   const { operateursLive, stats, positions, anomalies, urgences, checklists } = useOperateursLive();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -494,7 +494,8 @@ const Dashboard = () => {
                activeTab === 'planning' ? 'Planning' : 'Dashboard'}</h2>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span className="status">🟢 Système opérationnel</span>
-            {/* Bouton utilisateur admin */}
+            {/* Bouton utilisateur connecté */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button style={{
               display: 'flex', alignItems: 'center', gap: 8,
               background: '#fff', border: '1px solid #eee', borderRadius: 20, padding: '6px 16px',
@@ -505,9 +506,39 @@ const Dashboard = () => {
                 display: 'inline-block', width: 32, height: 32, borderRadius: '50%',
                 background: 'linear-gradient(135deg,#007bff 60%,#28a745 100%)', color: '#fff',
                 fontWeight: 'bold', fontSize: 18, textAlign: 'center', lineHeight: '32px',
-              }}>F</span>
-              Admin Freddy DEBOVES
+                }}>
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+                {user?.email || 'Utilisateur'}
+              </button>
+              
+              {/* Bouton de déconnexion */}
+              <button 
+                onClick={onLogout}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: '#dc3545', color: 'white', border: 'none', borderRadius: 20, 
+                  padding: '6px 12px', fontWeight: 'bold', fontSize: 14, 
+                  boxShadow: '0 1px 4px rgba(220, 53, 69, 0.3)', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#c82333';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#dc3545';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16,17 21,12 16,7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Déconnexion
             </button>
+            </div>
           </div>
         </header>
 

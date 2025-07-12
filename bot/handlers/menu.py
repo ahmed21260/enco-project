@@ -168,7 +168,7 @@ async def declare_panne_start(update: Update, context: ContextTypes.DEFAULT_TYPE
                 reply_markup=ReplyKeyboardMarkup(types, one_time_keyboard=True)
             )
         return
-    ):
+    if not update.message:
         return
     context.user_data['declare_panne']['typeIncident'] = update.message.text
     context.user_data['declare_panne']['step'] = 'photo'
