@@ -218,7 +218,7 @@ async def declare_panne_commentaire(update: Update, context: ContextTypes.DEFAUL
     context.user_data['declare_panne'] = None
 
 async def apitest_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    api_url = os.getenv("API_URL", "https://enco-prestarail-api.up.railway.app/api/positions")
+    api_url = os.getenv("API_URL", "https://believable-motivation-production.up.railway.app/api/positions")
     try:
         response = requests.get(api_url, timeout=10)
         if response.status_code == 200:

@@ -110,7 +110,7 @@ else:
         print(f"❌ Erreur initialisation OpenAI : {e}")
 
 # URL de l'API - utilise l'API déployée sur Railway
-API_URL = os.getenv("API_URL", "https://enco-api-production.up.railway.app")
+API_URL = os.getenv("API_URL", "https://believable-motivation-production.up.railway.app")
 
 async def send_daily_reminder():
     logger.info("=== send_daily_reminder appelé ===")
