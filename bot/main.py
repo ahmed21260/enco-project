@@ -139,7 +139,7 @@ async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("=== test_rappel appelé ===")
     if not update.effective_user or update.effective_user.id != ADMIN_ID:
         if update.message:
-        await update.message.reply_text("Accès réservé à l'administrateur.")
+            await update.message.reply_text("Accès réservé à l'administrateur.")
         return
     await send_daily_reminder()
     if update.message:
@@ -465,4 +465,4 @@ def main():
 if __name__ == "__main__":
     logger.info("=== __main__ détecté, appel main() ===")
     print("=== __main__ détecté, appel main() ===")
-        main()
+    main()
