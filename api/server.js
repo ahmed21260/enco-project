@@ -413,10 +413,16 @@ try {
 }
 
 app.listen(PORT, () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const baseUrl = isProduction 
+    ? `https://believable-motivation-production.up.railway.app`
+    : `http://localhost:${PORT}`;
+    
   console.log(`🚀 ENCO API Server démarré sur le port ${PORT}`);
-  console.log(`📊 Healthcheck: http://localhost:${PORT}/`);
-  console.log(`🗺️ Positions: http://localhost:${PORT}/api/positions`);
-  console.log(`🚨 Anomalies: http://localhost:${PORT}/api/anomalies`);
-  console.log(`🚨 Urgences: http://localhost:${PORT}/api/urgences`);
-  console.log(`👥 Opérateurs: http://localhost:${PORT}/api/operateurs`);
+  console.log(`📊 Healthcheck: ${baseUrl}/`);
+  console.log(`🗺️ Positions: ${baseUrl}/api/positions`);
+  console.log(`🚨 Anomalies: ${baseUrl}/api/anomalies`);
+  console.log(`🚨 Urgences: ${baseUrl}/api/urgences`);
+  console.log(`👥 Opérateurs: ${baseUrl}/api/operateurs`);
+  console.log(`🌍 Environnement: ${isProduction ? 'Production' : 'Développement'}`);
 }); 
