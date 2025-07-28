@@ -132,6 +132,90 @@ async def send_daily_reminder():
             except Exception as e:
                 logger.error(f"Erreur envoi à {chat_id} : {e}")
 
+async def send_daily_planning():
+    """Envoie automatiquement le planning du jour aux opérateurs"""
+    logger.info("=== send_daily_planning appelé ===")
+    print("=== send_daily_planning appelé ===")
+    
+    if not db:
+        logger.warning("Firebase non disponible pour l'envoi de planning")
+        return
+    
+    try:
+        # Récupérer tous les opérateurs
+        operateurs = list(db.collection('operateurs').stream())
+        today = datetime.now().date().isoformat()
+        
+        sent_count = 0
+        for op in operateurs:
+            op_data = op.to_dict()
+            op_id = op_data.get('telegram_id')
+            op_name = op_data.get('nom', 'Opérateur')
+            
+            if op_id:
+                try:
+                    # Récupérer le planning de l'opérateur pour aujourd'hui
+                    planning_docs = list(db.collection('planning').where('operateur_id', '==', str(op_id)).where('date_debut', '<=', today).where('date_fin', '>=', today).stream())
+                    
+                    if planning_docs:
+                        planning = planning_docs[0].to_dict()
+                        
+                        # Construire le message du planning
+                        message = f"🗓️ **PLANNING DU JOUR - {op_name}**\n\n"
+                        message += f"📅 **Date :** {datetime.now().strftime('%d/%m/%Y')}\n\n"
+                        
+                        # Planning du jour
+                        message += "🌅 **PLANNING DU JOUR :**\n"
+                        message += f"🕗 **Début :** {planning.get('debut', '07:00')}\n"
+                        message += f"🕕 **Fin :** {planning.get('fin', '17:00')}\n"
+                        message += f"🏗️ **Chantier :** {planning.get('chantier_name', 'Chantier principal')}\n"
+                        if planning.get('chantier_address'):
+                            message += f"📍 **Adresse :** {planning.get('chantier_address')}\n"
+                        if planning.get('contact_info'):
+                            message += f"📞 **Contact :** {planning.get('contact_info')}\n"
+                        message += f"🚜 **Machine :** {planning.get('machine_number', 'CAT 323M')}\n"
+                        message += f"📋 **Tâches :** {planning.get('taches', 'Maintenance préventive')}\n"
+                        message += f"👷 **Équipe :** {planning.get('equipe', 'Équipe 1')}\n\n"
+                        
+                        message += "✅ **Planning confirmé par l'encadrement**\n"
+                        message += "📞 Contactez l'encadrement en cas de question."
+                        
+                        # Envoyer le message
+                        await bot.send_message(
+                            chat_id=op_id,
+                            text=message
+                        )
+                        
+                        logger.info(f"Planning envoyé à {op_name} ({op_id})")
+                        sent_count += 1
+                        
+                        # Marquer comme envoyé dans Firestore
+                        planning_docs[0].reference.update({
+                            'envoyé_telegram': True,
+                            'envoyé_telegram_le': datetime.now().isoformat()
+                        })
+                        
+                    else:
+                        # Pas de planning pour aujourd'hui
+                        await bot.send_message(
+                            chat_id=op_id,
+                            text=f"🗓️ **PLANNING DU JOUR - {op_name}**\n\n"
+                                 f"⚠️ Aucun planning défini pour aujourd'hui.\n"
+                                 f"📞 Contactez l'encadrement pour plus d'informations."
+                        )
+                        logger.info(f"Message 'pas de planning' envoyé à {op_name} ({op_id})")
+                        sent_count += 1
+                        
+                except Exception as e:
+                    logger.error(f"Erreur envoi planning à {op_name} ({op_id}): {e}")
+        
+        logger.info(f"✅ Planning envoyé à {sent_count} opérateur(s)")
+        print(f"✅ Planning envoyé à {sent_count} opérateur(s)")
+        
+    except Exception as e:
+        logger.error(f"Erreur générale envoi planning: {e}")
+        print(f"❌ Erreur générale envoi planning: {e}")
+
 ADMIN_ID = 7648184043
 
 async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -260,12 +344,33 @@ async def test_ai(update, context):
     except Exception as e:
         await update.message.reply_text(f"Erreur IA : {e}")
 
+async def test_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Test de l'envoi de planning (admin seulement)"""
+    if not update.effective_user or update.effective_user.id != ADMIN_ID:
+        if update.message:
+            await update.message.reply_text("Accès réservé à l'administrateur.")
+        return
+    
+    await send_daily_planning()
+    if update.message:
+        await update.message.reply_text("✅ Planning envoyé à tous les opérateurs !")
+
 def schedule_reminders():
-    logger.info("=== schedule_reminders appelé ===")
-    print("=== schedule_reminders appelé ===")
+    """Programme les rappels automatiques"""
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_daily_reminder, 'cron', hour=19, minute=0)
-    return scheduler
+    
+    # Rappel quotidien à 6h00
+    scheduler.add_job(send_daily_reminder, 'cron', hour=6, minute=0)
+    
+    # Envoi automatique du planning à 6h30
+    scheduler.add_job(send_daily_planning, 'cron', hour=6, minute=30)
+    
+    # Rappel de fin de journée à 16h00
+    scheduler.add_job(send_daily_reminder, 'cron', hour=16, minute=0)
+    
+    scheduler.start()
+    logger.info("=== Rappels automatiques programmés ===")
+    print("=== Rappels automatiques programmés ===")
 
 async def on_startup(app):
     logger.info("=== on_startup appelé ===")
@@ -413,6 +518,7 @@ def main():
     application.add_handler(CommandHandler("test", test_handler))
     application.add_handler(CommandHandler("ping", ping))
     application.add_handler(CommandHandler("test_ai", test_ai))
+    application.add_handler(CommandHandler("test_planning", test_planning))
     
     # Ajouter les handlers de commandes
     application.add_handler(CommandHandler("start", start))

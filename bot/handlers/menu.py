@@ -54,6 +54,36 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_ai_assistant(update, context)
     elif text in ["🗓️ Planning", "/planning"]:
         await start_planning_wizard(update, context)
+    elif text in ["📋 Mon planning", "/monplanning"]:
+        # Envoi direct du planning de l'opérateur
+        user = update.effective_user
+        if user:
+            from handlers.planning import get_operator_planning
+            planning_data = await get_operator_planning(user.id)
+            
+            if planning_data.get('planning_jour'):
+                message = f"🗓️ **PLANNING - {user.full_name}**\n\n"
+                message += f"📅 **Date :** {datetime.datetime.now().strftime('%d/%m/%Y')}\n\n"
+                
+                planning_jour = planning_data['planning_jour']
+                message += "🌅 **PLANNING DU JOUR :**\n"
+                message += f"🕗 **Début :** {planning_jour.get('debut', '07:00')}\n"
+                message += f"🕕 **Fin :** {planning_jour.get('fin', '17:00')}\n"
+                message += f"🏗️ **Chantier :** {planning_jour.get('chantier', 'À confirmer')}\n"
+                message += f"🚜 **Machine :** {planning_jour.get('machine', 'À confirmer')}\n"
+                message += f"📋 **Tâches :** {planning_jour.get('taches', 'Maintenance préventive')}\n"
+                message += f"👷 **Équipe :** {planning_jour.get('equipe', 'Équipe 1')}\n\n"
+                
+                message += "✅ **Planning confirmé par l'encadrement**\n"
+                message += "📞 Contactez l'encadrement en cas de question."
+                
+                await update.message.reply_text(message)
+            else:
+                await update.message.reply_text(
+                    "🗓️ **PLANNING**\n\n"
+                    "⚠️ Aucun planning défini pour aujourd'hui.\n"
+                    "📞 Contactez l'encadrement pour plus d'informations."
+                )
     elif text in ["Menu principal", "/start"]:
         await start(update, context)
     else:

@@ -7,7 +7,7 @@ MAIN_MENU = [
     ["📌 Prise de poste", "📷 Envoyer une photo"],
     ["📄 Bon d'attachement", "🛑 URGENCE / INCIDENT"],
     ["🔧 Déclarer une panne", "🗺️ Outils ferroviaires"],
-    ["🤖 Assistant AI", "🗓️ Planning"]
+    ["🤖 Assistant AI", "📋 Mon planning"]
 ]
 MAIN_MENU_MARKUP = ReplyKeyboardMarkup(MAIN_MENU, resize_keyboard=True)
 
