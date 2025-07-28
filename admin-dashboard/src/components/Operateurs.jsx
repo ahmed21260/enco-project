@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './Operateurs.css';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
@@ -42,12 +42,35 @@ const FicheInfos = ({ operateur, prises }) => (
     )}
   </div>
 );
-const FichePhotos = ({ photos }) => (
-  <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
-    {photos.length === 0 && <span style={{color:'#888'}}>Aucune photo</span>}
-    {photos.map((photo, idx) => (
-      <img key={idx} src={photo.urlPhoto} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:6, cursor:'pointer'}} onClick={() => window.open(photo.urlPhoto, '_blank')} />
-    ))}
+const FichePhotos = ({ photosPrises, photosAnomalies, photosFinPoste }) => (
+  <div style={{display:'flex', flexDirection:'column', gap:16}}>
+    <div>
+      <b>📌 Prises de poste</b>
+      <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:4}}>
+        {photosPrises.length === 0 && <span style={{color:'#888'}}>Aucune photo de prise de poste</span>}
+        {photosPrises.map((p, idx) => (
+          <img key={p.url+idx} src={p.url} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:6, cursor:'pointer'}} onClick={() => window.open(p.url, '_blank')} />
+        ))}
+      </div>
+    </div>
+    <div>
+      <b>🚨 Anomalies</b>
+      <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:4}}>
+        {photosAnomalies.length === 0 && <span style={{color:'#888'}}>Aucune photo d'anomalie</span>}
+        {photosAnomalies.map((a, idx) => (
+          <img key={a.url+idx} src={a.url} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:6, cursor:'pointer'}} onClick={() => window.open(a.url, '_blank')} />
+        ))}
+      </div>
+    </div>
+    <div>
+      <b>🔴 Fin de poste</b>
+      <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:4}}>
+        {photosFinPoste.length === 0 && <span style={{color:'#888'}}>Aucune photo de fin de poste</span>}
+        {photosFinPoste.map((f, idx) => (
+          <img key={f.url+idx} src={f.url} alt="" style={{width:64, height:64, objectFit:'cover', borderRadius:6, cursor:'pointer'}} onClick={() => window.open(f.url, '_blank')} />
+        ))}
+      </div>
+    </div>
   </div>
 );
 const FicheBons = ({ bons }) => (
@@ -62,7 +85,12 @@ const FicheAnomalies = ({ anomalies }) => (
   <ul style={{maxHeight:120, overflowY:'auto', paddingLeft:18}}>
     {anomalies.length === 0 && <li style={{color:'#888'}}>Aucune anomalie</li>}
     {anomalies.map((a, idx) => (
-      <li key={idx}>{a.timestamp} {a.description || ''} {a.firebase_url && <a href={a.firebase_url} target="_blank" rel="noopener noreferrer">📸</a>}</li>
+      <li key={idx}>
+        {a.timestamp} {a.description || ''}
+        {Array.isArray(a.photos) && a.photos.map((url, i) => (
+          <a key={i} href={url} target="_blank" rel="noopener noreferrer">📸</a>
+        ))}
+      </li>
     ))}
   </ul>
 );
@@ -70,7 +98,12 @@ const FicheUrgences = ({ urgences }) => (
   <ul style={{maxHeight:120, overflowY:'auto', paddingLeft:18}}>
     {urgences.length === 0 && <li style={{color:'#888'}}>Aucune urgence</li>}
     {urgences.map((u, idx) => (
-      <li key={idx}>{u.timestamp} {u.type} {u.firebase_url && <a href={u.firebase_url} target="_blank" rel="noopener noreferrer">📸</a>}</li>
+      <li key={idx}>
+        {u.timestamp} {u.type}
+        {Array.isArray(u.photos) && u.photos.map((url, i) => (
+          <a key={i} href={url} target="_blank" rel="noopener noreferrer">📸</a>
+        ))}
+      </li>
     ))}
   </ul>
 );
@@ -109,16 +142,146 @@ const FicheStats = ({ stats }) => (
   </div>
 );
 
+const groupPhotosByDayAndType = (allPhotos) => {
+  // Regroupe les photos par jour (YYYY-MM-DD) puis par type
+  const grouped = {};
+  allPhotos.forEach(photo => {
+    if (!photo.timestamp) return;
+    const day = new Date(photo.timestamp).toISOString().slice(0, 10); // YYYY-MM-DD
+    if (!grouped[day]) grouped[day] = { 'prise_de_poste': [], 'fin_de_poste': [], 'anomalie': [], 'urgence': [] };
+    if (photo.type && grouped[day][photo.type]) {
+      grouped[day][photo.type].push(photo);
+    }
+  });
+  return grouped;
+};
+
+const sectionOrder = ['prise_de_poste', 'fin_de_poste', 'anomalie', 'urgence'];
+const sectionLabels = {
+  'prise_de_poste': '📌 Prises de poste',
+  'fin_de_poste': '🔴 Fin de poste',
+  'anomalie': '🚨 Anomalies',
+  'urgence': '⚡ Urgences',
+};
+
+const FichePhotosArchive = ({ groupedPhotos }) => {
+  const typeLabels = {
+    'prise_de_poste': '📌 Prises de poste',
+    'fin_de_poste': '🔴 Fin de poste',
+    'anomalie': '🚨 Anomalies',
+    'urgence': '⚡ Urgences',
+  };
+  const typeOrder = ['prise_de_poste', 'fin_de_poste', 'anomalie', 'urgence'];
+  const days = Object.keys(groupedPhotos).sort((a, b) => new Date(b) - new Date(a));
+  const [openDays, setOpenDays] = useState(() => Object.fromEntries(days.map(day => [day, true])));
+  const toggleDay = (day) => setOpenDays(prev => ({ ...prev, [day]: !prev[day] }));
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:32}}>
+      {days.length === 0 && <div style={{color:'#888'}}>Aucune photo</div>}
+      {days.map(day => (
+        <div key={day} style={{background:'#fafbfc', borderRadius:12, boxShadow:'0 2px 8px #0001', padding:'18px 22px', marginBottom:0}}>
+          <div style={{display:'flex', alignItems:'center', cursor:'pointer', marginBottom:10}} onClick={()=>toggleDay(day)}>
+            <span style={{fontWeight:700, fontSize:18, color:'#222', flex:1}}>
+              🗓️ {new Date(day).toLocaleDateString('fr-FR', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}
+            </span>
+            <span style={{fontSize:18, color:'#1976d2', marginLeft:8}}>{openDays[day] ? '▼' : '▶'}</span>
+          </div>
+          {openDays[day] && (
+            <div style={{display:'flex', flexDirection:'column', gap:18}}>
+              {typeOrder.map(type => (
+                <div key={type} style={{marginBottom:0}}>
+                  <div style={{display:'flex', alignItems:'center', marginBottom:6}}>
+                    <span style={{fontSize:20, marginRight:8}}>{typeLabels[type].split(' ')[0]}</span>
+                    <span style={{fontWeight:600, fontSize:16, color:'#222'}}>{typeLabels[type].split(' ').slice(1).join(' ')}</span>
+                    <span style={{marginLeft:10, background:'#1976d2', color:'#fff', borderRadius:12, fontSize:12, fontWeight:600, padding:'1px 8px'}}>{groupedPhotos[day][type].length}</span>
+                  </div>
+                  {groupedPhotos[day][type].length === 0 ? (
+                    <div style={{color:'#bbb', fontSize:15, margin:'10px 0 8px 0'}}>Aucune</div>
+                  ) : (
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(110px, 1fr))', gap:14}}>
+                      {groupedPhotos[day][type].map((p, idx) => (
+                        <div key={p.url+idx} style={{display:'flex', flexDirection:'column', alignItems:'center', background:'#fff', borderRadius:8, boxShadow:'0 1px 4px #0001', padding:7}}>
+                          <img src={p.url} alt="" style={{width:88, height:88, objectFit:'cover', borderRadius:6, marginBottom:5, cursor:'pointer'}} onClick={() => window.open(p.url, '_blank')} />
+                          <span style={{fontSize:12, color:'#888', marginTop:2}}>{p.timestamp ? new Date(p.timestamp).toLocaleString('fr-FR') : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Operateurs = () => {
-  const { operateursLive, stats, positions, anomalies, urgences, checklists } = useOperateursLive();
+  const { operateursLive, stats, positions, anomalies, urgences, checklists, prisesPoste, positionsLog } = useOperateursLive();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState('Infos');
   const [loadingFiche, setLoadingFiche] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [focusedSection, setFocusedSection] = useState(null); // null ou type section
+
+  // Sécurité : reset focusedSection quand on ferme la modal opérateur
+  const handleCloseModal = () => {
+    setSelected(null);
+    setFocusedSection(null);
+  };
+
+  const getLastPrise = (operatorId) => {
+    return positions
+      .filter(p => p.operatorId === operatorId && (p.type === 'prise_de_poste' || p.type === 'prise'))
+      .sort((a, b) => new Date(b.timestamp || b.heure) - new Date(a.timestamp || a.heure))[0];
+  };
+  const getLastFin = (operatorId) => {
+    return positionsLog
+      .filter(p => (p.operatorId === operatorId) && (p.type === 'fin_de_poste' || p.type === 'fin'))
+      .sort((a, b) => new Date(b.timestamp || b.heure) - new Date(a.timestamp || a.heure))[0];
+  };
 
   // Filtrer les opérateurs selon la recherche
-  const filtered = operateursLive.filter(op => (op.nom || '').toLowerCase().includes(search.toLowerCase()));
+  const filtered = operateursLive.map(op => {
+    const lastPrise = getLastPrise(op.operatorId);
+    const lastFin = getLastFin(op.operatorId);
+    let type = op.type;
+    if (lastPrise && (!lastFin || new Date(lastPrise.timestamp || lastPrise.heure) > new Date(lastFin.timestamp || lastFin.heure))) {
+      type = 'prise_de_poste';
+    } else if (lastFin) {
+      type = 'fin_de_poste';
+    }
+    return { ...op, type };
+  }).filter(op => (op.nom || '').toLowerCase().includes(search.toLowerCase()));
+
+  // Fusionne toutes les photos avec enrichissement type
+  const photosPrises = prisesPoste
+    .filter(p => (p.operatorId === selected?.operatorId || p.operateur_id === selected?.operatorId))
+    .flatMap(p => Array.isArray(p.photos) ? p.photos.map(url => ({ url, timestamp: p.timestamp, type: 'prise_de_poste' })) : []);
+  const photosAnomalies = anomalies
+    .filter(a => (a.operatorId === selected?.operatorId || a.operateur_id === selected?.operatorId))
+    .flatMap(a => Array.isArray(a.photos) ? a.photos.map(url => ({ url, timestamp: a.timestamp, type: 'anomalie' })) : []);
+  const photosUrgences = urgences
+    .filter(u => (u.operatorId === selected?.operatorId || u.operateur_id === selected?.operatorId))
+    .flatMap(u => Array.isArray(u.photos) ? u.photos.map(url => ({ url, timestamp: u.timestamp, type: 'urgence' })) : []);
+  const photosFinPoste = positionsLog
+    .filter(p => (p.operatorId === selected?.operatorId || p.operateur_id === selected?.operatorId) && (p.type === 'fin_de_poste' || p.type === 'fin'))
+    .flatMap(p => {
+      if (Array.isArray(p.photos)) {
+        return p.photos.map(url => ({ url, timestamp: p.timestamp, type: 'fin_de_poste' }));
+      } else if (p.photoURL) {
+        return [{ url: p.photoURL, timestamp: p.timestamp, type: 'fin_de_poste' }];
+      } else if (p.photo_file_id) {
+        return [{ url: `https://api.telegram.org/file/bot<YOUR_BOT_TOKEN>/${p.photo_file_id}`, timestamp: p.timestamp, type: 'fin_de_poste' }];
+      }
+      return [];
+    });
+  // Fusionne tout
+  const allPhotos = [...photosPrises, ...photosFinPoste, ...photosAnomalies, ...photosUrgences];
+  // Grouper par jour et type
+  const groupedPhotos = groupPhotosByDayAndType(allPhotos);
 
   return (
     <div className="operateurs-section">
@@ -158,15 +321,19 @@ const Operateurs = () => {
         })}
       </div>
       {selected && (
-        <div className="modal-overlay" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={() => setSelected(null)}>
-          <div className="modal-content" style={{ background:'#fff', borderRadius:12, padding:32, minWidth:340, minHeight:180, boxShadow:'0 2px 16px rgba(0,0,0,0.15)', position:'relative' }} onClick={e => e.stopPropagation()}>
-            <button style={{ position:'absolute', top:8, right:12, background:'none', border:'none', fontSize:22, cursor:'pointer' }} onClick={() => setSelected(null)}>×</button>
+        <div className="modal-overlay" style={{ position: 'fixed', top:0, left:0, width:'100vw', height:'100vh', background:'rgba(0,0,0,0.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={handleCloseModal}>
+          <div className="modal-content" style={{ background:'#fff', borderRadius:12, padding:32, minWidth:320, maxWidth:900, width:'95vw', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 2px 16px rgba(0,0,0,0.15)', position:'relative' }} onClick={e => e.stopPropagation()}>
+            <button style={{ position:'absolute', top:8, right:12, background:'none', border:'none', fontSize:22, cursor:'pointer' }} onClick={handleCloseModal}>×</button>
             <h2 style={{margin:0}}>{selected.nom}</h2>
             <Tabs tabs={['Infos', 'Photos', 'Bons', 'Anomalies', 'Urgences', 'Maintenance', 'Historique', 'Statistiques']} active={activeTab} onChange={setActiveTab} />
             {loadingFiche ? <div>Chargement fiche...</div> : (
               <div>
-                {activeTab === 'Infos' && <FicheInfos operateur={selected} prises={positions.filter(p => p.operatorId === selected.operatorId)} />}
-                {activeTab === 'Photos' && <FichePhotos photos={positions.filter(p => p.operatorId === selected.operatorId).map(p => ({ ...p, operatorId: selected.operatorId }))} />}
+                {activeTab === 'Infos' && <FicheInfos operateur={selected} prises={getLastPrise(selected.operatorId) ? [getLastPrise(selected.operatorId)] : []} />}
+                {activeTab === 'Photos' && (
+                  <div>
+                    <FichePhotosArchive groupedPhotos={groupedPhotos} />
+                  </div>
+                )}
                 {activeTab === 'Bons' && <FicheBons bons={positions.filter(p => p.operatorId === selected.operatorId).map(p => ({ ...p, operatorId: selected.operatorId }))} />}
                 {activeTab === 'Anomalies' && <FicheAnomalies anomalies={anomalies.filter(a => a.operatorId === selected.operatorId)} />}
                 {activeTab === 'Urgences' && <FicheUrgences urgences={urgences.filter(u => u.operatorId === selected.operatorId)} />}

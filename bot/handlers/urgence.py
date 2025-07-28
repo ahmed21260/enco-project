@@ -193,27 +193,27 @@ async def confirm_urgence(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Sauvegarder dans Firestore avec gestion d'erreur
     try:
-        save_urgence(urgence_data)
+    save_urgence(urgence_data)
         log_msg = f"[URGENCE] Enregistrée pour {user.full_name} ({user.id}) : {urgence_data['type']}"
         logging.info(log_msg)
         print(log_msg)
-
-        # Message de confirmation avec numéros d'urgence
-        numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
-        await update.message.reply_text(
-            f"\u2705 **URGENCE ENREGISTR\u00c9E ET TRANSMISE !**\n\n"
-            f"\ud83d\udea8 L'encadrement a \u00e9t\u00e9 notifi\u00e9 imm\u00e9diatement.\n"
-            f"\ud83d\udccd Ta position a \u00e9t\u00e9 transmise.\n\n"
-            f"\ud83d\udcde **Num\u00e9ros d'urgence :**\n"
-            f"{numeros_urgence}\n\n"
-            f"\ud83d\udd04 Reste en contact avec l'encadrement.",
-            reply_markup=ReplyKeyboardMarkup(
-                [
-                    ["Menu principal", "Signaler une autre urgence"],
-                    ["Signaler une anomalie", "Envoyer photo en cours de mission"]
-                ], resize_keyboard=True
-            )
+    
+    # Message de confirmation avec numéros d'urgence
+    numeros_urgence = get_numeros_urgence(context.user_data.get('urgence_type', ''))
+    await update.message.reply_text(
+        f"\u2705 **URGENCE ENREGISTR\u00c9E ET TRANSMISE !**\n\n"
+        f"\ud83d\udea8 L'encadrement a \u00e9t\u00e9 notifi\u00e9 imm\u00e9diatement.\n"
+        f"\ud83d\udccd Ta position a \u00e9t\u00e9 transmise.\n\n"
+        f"\ud83d\udcde **Num\u00e9ros d'urgence :**\n"
+        f"{numeros_urgence}\n\n"
+        f"\ud83d\udd04 Reste en contact avec l'encadrement.",
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                ["Menu principal", "Signaler une autre urgence"],
+                ["Signaler une anomalie", "Envoyer photo en cours de mission"]
+            ], resize_keyboard=True
         )
+    )
     except Exception as e:
         logging.error(f"[URGENCE] Erreur Firestore: {e}")
         print(f"[URGENCE] Erreur Firestore: {e}")

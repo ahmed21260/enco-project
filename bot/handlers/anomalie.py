@@ -1,3 +1,12 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+import firebase_admin
+from firebase_admin import credentials
+CRED_PATH = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', 'serviceAccountKey_railway.txt')
+BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET', 'enco-prestarail.firebasestorage.app')
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(credentials.Certificate(CRED_PATH), {'storageBucket': BUCKET})
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, ContextTypes
 from utils.firestore import save_anomalie, db
@@ -210,7 +219,6 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data = {}
     context.user_data['gps'] = update.message.location
 
-    # --- AJOUT : Enregistrement immédiat de l'anomalie pour ping ---
     user = update.effective_user
     from datetime import datetime
     anomalie_data = {
@@ -230,6 +238,22 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "ping": True,  # Pour différencier les pings immédiats
         "statut": "en_attente_confirmation"
     }
+
+    # --- PATCH: Upload photo Telegram vers Firebase Storage et ajoute l'URL ---
+    from utils.firestore import upload_photo_to_storage
+    import os
+    photo_file_id = context.user_data.get('photo')
+    if photo_file_id:
+        file = await context.bot.get_file(photo_file_id)
+        local_dir = f"bot/photos/{user.id}"
+        os.makedirs(local_dir, exist_ok=True)
+        file_name = f"{user.id}_anomalie_{update.message.date.strftime('%Y%m%d_%H%M%S')}.jpg"
+        file_path = f"{local_dir}/{file_name}"
+        await file.download_to_drive(file_path)
+        storage_path = f"anomalies/{user.id}/{file_name}"
+        photo_url = upload_photo_to_storage(file_path, storage_path)
+        anomalie_data['photoURL'] = photo_url
+
     save_anomalie(anomalie_data)
 
     # Récapitulatif
@@ -245,7 +269,11 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📋 Anomalie : {anomalie_specifique}\n"
         f"📝 Détails : {description}\n"
         f"📍 Position : {update.message.location.latitude:.4f}, {update.message.location.longitude:.4f}\n\n"
-        f"✅ Confirme l'envoi de l'anomalie ? (oui/non)"
+        f"Confirme l'envoi de l'anomalie :",
+        reply_markup=ReplyKeyboardMarkup(
+            [["✅ Confirmer", "❌ Annuler"]],
+            one_time_keyboard=True, resize_keyboard=True
+        )
     )
     logging.info(f"[ANOMALIE] Localisation reçue pour user {update.effective_user.id}")
     return CONFIRM
@@ -262,12 +290,15 @@ async def confirm_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"🤖 Suggestion IA : {suggestion}")
         return CONFIRM
     if not update.message.text:
-        await update.message.reply_text("Merci de répondre par 'oui' pour confirmer l'anomalie.")
+        await update.message.reply_text("Merci d'utiliser les boutons pour confirmer ou annuler.")
         return CONFIRM
-    if update.message.text.lower() != "oui":
+    if update.message.text.strip() == "❌ Annuler":
         await update.message.reply_text("❌ Signalement annulé.")
         logging.info(f"[ANOMALIE] Annulée pour user {update.effective_user.id}")
         return ConversationHandler.END
+    if update.message.text.strip() != "✅ Confirmer":
+        await update.message.reply_text("Merci d'utiliser les boutons pour confirmer ou annuler.")
+        return CONFIRM
     
     user = update.message.from_user
     loc = context.user_data.get('gps')
@@ -288,9 +319,6 @@ async def confirm_anomalie(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "latitude": loc.latitude,
         "longitude": loc.longitude,
         "photo_file_id": context.user_data.get('photo'),
-        "photoURL": context.user_data.get('photo_url', None),
-        "urlPhoto": context.user_data.get('photo_url', None),
-        "url": context.user_data.get('photo_url', None),
         "handled": False,
         "urgence_level": "NORMAL"
     }

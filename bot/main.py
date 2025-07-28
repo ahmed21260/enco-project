@@ -4,12 +4,6 @@ import sys
 import os
 # --- FLUSH LOGS IMMEDIAT ---
 os.environ["PYTHONUNBUFFERED"] = "1"
-# Charger le .env AVANT tout import local
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # Pas grave si python-dotenv n'est pas installé en prod
 import asyncio
 import logging
 print("=== Imports standards OK ===")
@@ -40,6 +34,12 @@ from firebase_admin import credentials
 import json
 from datetime import datetime
 print("=== Imports handlers et services OK ===")
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Pas grave si python-dotenv n'est pas installé en prod
 
 # Configuration logging robuste
 logging.basicConfig(
@@ -74,12 +74,12 @@ try:
         if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
             cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
         else:
-            cred_file = "firebase_credentials.json" if os.path.exists("firebase_credentials.json") else "serviceAccountKey.json"
+            cred_file = "firebase_credentials.json" if os.path.exists("firebase_credentials.json") else "serviceAccountKey_railway.txt"
             cred = credentials.Certificate(cred_file)
 
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred, {
-                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
+                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
             })
         logger.info("✅ Firebase initialisé avec succès")
         print("✅ Firebase initialisé avec succès")
@@ -139,7 +139,7 @@ async def test_rappel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("=== test_rappel appelé ===")
     if not update.effective_user or update.effective_user.id != ADMIN_ID:
         if update.message:
-            await update.message.reply_text("Accès réservé à l'administrateur.")
+        await update.message.reply_text("Accès réservé à l'administrateur.")
         return
     await send_daily_reminder()
     if update.message:
@@ -352,9 +352,10 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update, context):
     logger.error("=== error_handler appelé ===")
     print("=== error_handler appelé ===")
+    """Gestionnaire d'erreur global"""
     error_msg = str(context.error) if context.error else "Unknown error"
-
-    # Ignore les erreurs de parsing des requêtes non-Telegram (Railway, etc.)
+    
+    # Ignorer les erreurs de parsing des requêtes non-Telegram
     if any(keyword in error_msg for keyword in [
         "unexpected keyword argument 'type'",
         "missing 1 required positional argument: 'update_id'",
@@ -363,7 +364,7 @@ async def error_handler(update, context):
         logger.warning("🚫 Requête non-Telegram ignorée (Railway notification)")
         print("🚫 Requête non-Telegram ignorée (Railway notification)")
         return
-
+    
     # Log des autres erreurs
     logger.error(f"❌ Erreur lors du traitement d'un update: {error_msg}")
     print(f"❌ Erreur lors du traitement d'un update: {error_msg}")
@@ -464,4 +465,4 @@ def main():
 if __name__ == "__main__":
     logger.info("=== __main__ détecté, appel main() ===")
     print("=== __main__ détecté, appel main() ===")
-    main()
+        main()

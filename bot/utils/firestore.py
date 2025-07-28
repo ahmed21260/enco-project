@@ -1,4 +1,5 @@
 import os
+BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET', 'enco-prestarail.firebasestorage.app')
 import json
 from datetime import datetime
 import firebase_admin
@@ -15,9 +16,9 @@ if USE_FIRESTORE:
             if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
                 cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
             else:
-                cred = credentials.Certificate("serviceAccountKey.json")  # fallback local
+                cred = credentials.Certificate("serviceAccountKey_railway.txt")  # fallback local
             initialize_app(cred, {
-                'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
+                'storageBucket': BUCKET
             })
         db = firestore.client()
     except (json.JSONDecodeError, KeyError, FileNotFoundError, ValueError, Exception) as e:
@@ -196,7 +197,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(os.getenv('FIREBASE_CREDENTIALS', '../firebase/serviceAccountKey.json'))
+    cred = credentials.Certificate(os.getenv('FIREBASE_CREDENTIALS', '../firebase/serviceAccountKey_railway.txt'))
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 

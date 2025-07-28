@@ -4,7 +4,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # Récupère le chemin de la clé de service depuis l'environnement ou par défaut
-CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS', '../firebase/serviceAccountKey.json')
+CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS', '../firebase/serviceAccountKey_railway.txt')
 
 if not os.path.exists(CREDENTIALS_PATH):
     print(f"❌ ERREUR : Fichier de clé de service introuvable à {CREDENTIALS_PATH}")

@@ -4,7 +4,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore as fs
 
 # Chemin absolu depuis la racine du projet
-KEY_PATH = os.path.join(os.path.dirname(__file__), '..', 'serviceAccountKey.json')
+KEY_PATH = os.path.join(os.path.dirname(__file__), '..', 'serviceAccountKey_railway.txt')
 if not os.path.exists(KEY_PATH):
     raise FileNotFoundError(f"Clé Firebase introuvable à {KEY_PATH}")
 cred = credentials.Certificate(KEY_PATH)

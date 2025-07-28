@@ -9,8 +9,12 @@ import TimelineActions from './TimelineActions';
 import Operateurs from './Operateurs';
 import BonsAttachement from './BonsAttachement';
 import OutilsFerroviaires from './OutilsFerroviaires';
-import Planning from './Planning';
+import PlanningPro from './PlanningPro';
+import PlanningDiagnostic from './PlanningDiagnostic';
+import PlanningTest from './PlanningTest';
+import PlanningDebug from './PlanningDebug';
 import ScoringDashboard from './ScoringDashboard';
+import PhotoTest from './PhotoTest';
 import { realtimeDb } from '../firebaseRealtime';
 import { ref, onValue } from 'firebase/database';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -479,6 +483,30 @@ const Dashboard = ({ onLogout, user }) => {
           >
             🗓️ Planning
           </button>
+          <button 
+            className={`nav-btn ${activeTab === 'planning-diagnostic' ? 'active' : ''}`}
+            onClick={() => setActiveTab('planning-diagnostic')}
+          >
+            🔧 Diagnostic Planning
+          </button>
+          <button 
+            className={`nav-btn ${activeTab === 'planning-test' ? 'active' : ''}`}
+            onClick={() => setActiveTab('planning-test')}
+          >
+            🧪 Test Nouvelles Fonctionnalités
+          </button>
+          <button 
+            className={`nav-btn ${activeTab === 'planning-debug' ? 'active' : ''}`}
+            onClick={() => setActiveTab('planning-debug')}
+          >
+            🐛 Debug Planning
+          </button>
+          <button 
+            className={`nav-btn ${activeTab === 'phototest' ? 'active' : ''}`}
+            onClick={() => setActiveTab('phototest')}
+          >
+            🧪 Test Photos
+          </button>
 
         </nav>
       </div>
@@ -491,7 +519,11 @@ const Dashboard = ({ onLogout, user }) => {
                activeTab === 'operateurs' ? 'Opérateurs' : 
                activeTab === 'bons' ? 'Bons d\'attachement' :
                activeTab === 'outils' ? 'Outils ferroviaires' :
-               activeTab === 'planning' ? 'Planning' : 'Dashboard'}</h2>
+               activeTab === 'planning' ? 'Planning' :
+               activeTab === 'planning-diagnostic' ? 'Diagnostic Planning' :
+               activeTab === 'planning-test' ? 'Test Nouvelles Fonctionnalités' :
+               activeTab === 'planning-debug' ? 'Debug Planning' :
+               activeTab === 'phototest' ? 'Test Photos' : 'Dashboard'}</h2>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span className="status">🟢 Système opérationnel</span>
             {/* Bouton utilisateur connecté */}
@@ -555,7 +587,11 @@ const Dashboard = ({ onLogout, user }) => {
               {activeTab === 'operateurs' && <Operateurs />}
               {activeTab === 'bons' && <BonsAttachement />}
               {activeTab === 'outils' && <OutilsFerroviaires />}
-              {activeTab === 'planning' && <Planning />}
+              {activeTab === 'planning' && <PlanningPro />}
+              {activeTab === 'planning-diagnostic' && <PlanningDiagnostic />}
+              {activeTab === 'planning-test' && <PlanningTest />}
+              {activeTab === 'planning-debug' && <PlanningDebug />}
+              {activeTab === 'phototest' && <PhotoTest />}
             </>
           )}
         </main>

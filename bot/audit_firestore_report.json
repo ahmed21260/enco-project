@@ -1,0 +1,327 @@
+{
+  "prises_poste": [
+    {
+      "id": "0OQmy9kw2NKIdNqsKpIC",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "192837465",
+      "error": "Champ manquant: operatorId"
+    },
+    {
+      "id": "192837465",
+      "error": "Champ manquant: timestamp"
+    },
+    {
+      "id": "1AZfGARvFzYgeXEBMct3",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "5IPUtgYZUmauw5yz70co",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "9OBIEbOaB7NZzWicHEHJ",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "A7HRBajn8Rw1cnCETOjA",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "BvcvgncJNtgxg2iy1U62",
+      "error": "URL invalide: photos_urls=[None]"
+    },
+    {
+      "id": "Gpadi3TvZdqN54iKzD5P",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "Kg0AsUHa56YaiN7RZ1i9",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "MonK0i7znLo1pcMzRVqV",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "Za74f6qkmxSBPDMkhRA7",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "buamDhfLsi2z0Iy5GxHo",
+      "error": "URL invalide: photos_urls=[None]"
+    },
+    {
+      "id": "d44U8o8Qtso6xMQOpDM0",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "oQTx25GhhD170ALn7g0v",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "uHWe7DMfIMAgEknmDOhO",
+      "error": "URL invalide: photos_urls=[None, None, None, None]"
+    },
+    {
+      "id": "x0GDNNXm2IvHnOWgMcVV",
+      "error": "URL invalide: photos_urls=['https://firebase.storage...']"
+    },
+    {
+      "id": "0OQmy9kw2NKIdNqsKpIC",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "5IPUtgYZUmauw5yz70co",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "A7HRBajn8Rw1cnCETOjA",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "Kg0AsUHa56YaiN7RZ1i9",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "buamDhfLsi2z0Iy5GxHo",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "192837465",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "1AZfGARvFzYgeXEBMct3",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "9OBIEbOaB7NZzWicHEHJ",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "Gpadi3TvZdqN54iKzD5P",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "MonK0i7znLo1pcMzRVqV",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "Za74f6qkmxSBPDMkhRA7",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "d44U8o8Qtso6xMQOpDM0",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "oQTx25GhhD170ALn7g0v",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "uHWe7DMfIMAgEknmDOhO",
+      "error": "Aucune photo liée à cet opérateur"
+    },
+    {
+      "id": "BvcvgncJNtgxg2iy1U62",
+      "error": "Aucune photo liée à cet opérateur"
+    }
+  ],
+  "photos": [
+    {
+      "id": "CEJdJxj9Ldvr8yuLuw8W",
+      "error": "Champ manquant: photo_file_id"
+    },
+    {
+      "id": "0wXVBLXXzSPnt3Gn9Dib",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "9WVtmQg2HHDwgF3ieNab",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "RgYvxvmM0u5mnPGLe9kR",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "fl22tD8H8cpahA6oiaT4",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "4qdd0RbcG4FFpwgNuLMJ",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "DyR3mv6TflN39QBFwi92",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "GfAWSEH59VQC7vODJdnD",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "h4gy4ZGS3Qvd2JDpW6uv",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "55AsLKotB5EO3BE4lyBI",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "ZGaPdlAMOysHIOBsgl4l",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "fmzKKsGaiBmprroVjObb",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "gWaWsjCk2KfG771Un9mX",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "5AAx0YV5YwanZTHC2J2e",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "IuP5ginQF1iDDZtW2GQp",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "eJ14FKybl5tmbWIgTsFG",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "rhXsiyJLQa0t7LulAWKD",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "5O5Gu7WVoToUHVOuD8ic",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "R6oXNEhQNZjtEp5HuVBE",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "Vt8AN4HkR4Rdz7OUy4hp",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "krLwDRGTL8UGBKbUXsMR",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "633bn737fQlKp4GtrpTt",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "MPBczEGHmzuuGNCRK0L9",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "ZvcygANyIORma6hRO618",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "uwb8UoTLfkR1BwZKu39Q",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "CAg59BgZ2rEAVomf6K2k",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "UK6gfsy4LfLEncpz0pnX",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "s1Zq1rG8s7z8trwMgJSD",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "uinQiJOyBqFUBIx8PMAZ",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "EjRd8Eh4EiWiwagP6GEd",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "TfiVu3AwCNUQ8sbRzhSp",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "emMaGPAZgw9Xcks4gWxv",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "tIwkvRKSmUQ2u04vE5Tq",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "HJIKJRjOSJai47OVUpLW",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "Hat1d2c2PgnH5pMjXOAC",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "HlbloZswf0WnIhzdki3v",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "rgbL6ClVCre9IPhwlZgh",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "HsOKPFGLmFwqfuIaSYXd",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "besF2FTMpLtaiVtOHQgi",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "doQzXa7j3uS1Td51A1mX",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "lexit7ER68HwcpXtTO2d",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "IrRpZ8Tp612r8eKIqTQ8",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "jiYgTSe9D8oGlzBafuKX",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    },
+    {
+      "id": "yNrzW1L1tMP1z00YQ2oy",
+      "error": "Photo orpheline (aucune prise_poste liée à cet opérateur)"
+    }
+  ],
+  "anomalies": [
+    {
+      "id": "0PdDEiicDOeA7SMMBxrp",
+      "error": "Champ manquant: operatorId"
+    },
+    {
+      "id": "b5vEuOKFIWtasiDEEoGX",
+      "error": "Champ manquant: operatorId"
+    },
+    {
+      "key": [
+        null,
+        "2024-07-01T10:15:00Z"
+      ],
+      "error": "Doublon sur ['operatorId', 'timestamp']: 2 occurrences"
+    }
+  ]
+}

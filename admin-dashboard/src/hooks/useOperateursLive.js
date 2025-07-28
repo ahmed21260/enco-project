@@ -105,15 +105,40 @@ export function useOperateursLive() {
     operateurs: operateurs.length
   };
 
+  // Harmonisation des champs photo pour toutes les entités
+  function getPhotosFromPrise(prise) {
+    // Prise de poste : photos_urls (array d'URL)
+    if (Array.isArray(prise.photos_urls) && prise.photos_urls.length > 0) return prise.photos_urls;
+    // Compatibilité anciens champs
+    if (Array.isArray(prise.photos_url) && prise.photos_url.length > 0) return prise.photos_url;
+    if (prise.photoURL) return [prise.photoURL];
+    if (prise.urlPhoto) return [prise.urlPhoto];
+    if (prise.photoUrl) return [prise.photoUrl];
+    return [];
+  }
+  function getPhotoFromAnomalie(anomalie) {
+    // Anomalie : photoURL, photoUrl, urlPhoto
+    return [anomalie.photoURL || anomalie.photoUrl || anomalie.urlPhoto].filter(Boolean);
+  }
+  function getPhotoFromUrgence(urgence) {
+    return [urgence.photoURL || urgence.photoUrl || urgence.urlPhoto].filter(Boolean);
+  }
+
+  // Enrichir chaque entité avec un champ universel 'photos' (toujours un array)
+  const positionsEnriched = positions.map(p => ({ ...p, photos: getPhotosFromPrise(p) }));
+  const prisesPosteEnriched = prisesPoste.map(p => ({ ...p, photos: getPhotosFromPrise(p) }));
+  const anomaliesEnriched = anomalies.map(a => ({ ...a, photos: getPhotoFromAnomalie(a) }));
+  const urgencesEnriched = urgences.map(u => ({ ...u, photos: getPhotoFromUrgence(u) }));
+
   return {
     operateursLive: Object.values(latestByOperator),
     operateursEnPoste, // <-- la vraie liste métier avec timestamp prise de poste
     stats,
-    positions,
-    anomalies,
-    urgences,
+    positions: positionsEnriched,
+    anomalies: anomaliesEnriched,
+    urgences: urgencesEnriched,
     checklists,
-    prisesPoste,
+    prisesPoste: prisesPosteEnriched,
     positionsLog,
     messagesIA,
     operateurs

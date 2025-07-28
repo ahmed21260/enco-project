@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script pour convertir un fichier serviceAccountKey.json en format Railway
+Script pour convertir un fichier serviceAccountKey_railway.txt en format Railway
 Usage: python convert_json_railway.py
 """
 
@@ -8,17 +8,17 @@ import json
 import os
 
 def convert_json_for_railway():
-    """Convertit le fichier serviceAccountKey.json en format Railway"""
+    """Convertit le fichier serviceAccountKey_railway.txt en format Railway"""
     
     # Vérifier si le fichier existe
-    if not os.path.exists('serviceAccountKey.json'):
-        print("❌ Fichier serviceAccountKey.json non trouvé")
+    if not os.path.exists('serviceAccountKey_railway.txt'):
+        print("❌ Fichier serviceAccountKey_railway.txt non trouvé")
         print("📥 Télécharge le fichier depuis Firebase Console > Paramètres > Comptes de service")
         return
     
     try:
         # Lire le fichier JSON original
-        with open('serviceAccountKey.json', 'r') as f:
+        with open('serviceAccountKey_railway.txt', 'r') as f:
             data = json.load(f)
         
         # Convertir la clé privée pour Railway

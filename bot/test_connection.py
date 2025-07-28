@@ -10,6 +10,8 @@ from telegram import Bot
 import firebase_admin
 from firebase_admin import credentials, firestore
 import json
+from dotenv import load_dotenv
+load_dotenv()
 
 # Configuration logging
 logging.basicConfig(
@@ -22,7 +24,7 @@ async def test_telegram():
     """Test de connectivité Telegram"""
     print("🔍 Test de connectivité Telegram...")
     
-    BOT_TOKEN = os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
+    BOT_TOKEN = os.environ.get('BOT_TOKEN')
     if not BOT_TOKEN:
         print("❌ BOT_TOKEN non défini")
         return False
@@ -45,12 +47,12 @@ def test_firebase():
             if os.getenv("FIREBASE_SERVICE_ACCOUNT"):
                 cred = credentials.Certificate(json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"]))
             else:
-                cred_file = "firebase_credentials.json" if os.path.exists("firebase_credentials.json") else "serviceAccountKey.json"
+                cred_file = "firebase_credentials.json" if os.path.exists("firebase_credentials.json") else "serviceAccountKey_railway.txt"
                 cred = credentials.Certificate(cred_file)
 
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred, {
-                    'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.appspot.com")
+                    'storageBucket': os.getenv("FIREBASE_STORAGE_BUCKET", "enco-prestarail.firebasestorage.app")
                 })
             
             db = firestore.client()
@@ -206,7 +208,7 @@ async def main():
         if not results.get("Firebase"):
             print("\n💡 SUGGESTIONS:")
             print("- Vérifiez ENCO_USE_FIRESTORE=1")
-            print("- Vérifiez FIREBASE_SERVICE_ACCOUNT ou serviceAccountKey.json")
+            print("- Vérifiez FIREBASE_SERVICE_ACCOUNT ou serviceAccountKey_railway.txt")
         
         if not results.get("Telegram"):
             print("\n💡 SUGGESTIONS:")

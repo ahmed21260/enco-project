@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-07-12T22:02:12.766307",
+  "summary": {
+    "total_photos_mapped": 16,
+    "prises_updated": 14,
+    "anomalies_updated": 4,
+    "prises_errors": 0,
+    "anomalies_errors": 4
+  },
+  "telegram_to_url_mapping": {
+    "AgACAgQAAxkBAAIFvWhyVF0AAU5kaP3lFbCUbfPPva7gCQACm8sxGyyrkFMMlf4dONIM6gEAAwIAA3kAAzYE": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FoQTx25GhhD170ALn7g0v%2FoQTx25GhhD170ALn7g0v_prise_AgACAgQAAxkBAAIFvWhyVF0AAU5kaP3lFbCUbfPPva7gCQACm8sxGyyrkFMMlf4dONIM6gEAAwIAA3kAAzYE.jpg?alt=media",
+    "AgACAgQAAxkBAAIFu2hyVF0pbCbaO3CvAxBw91zqYJdKAAKZyzEbLKuQU-5JZ0rrGa8cAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F1AZfGARvFzYgeXEBMct3%2F1AZfGARvFzYgeXEBMct3_prise_AgACAgQAAxkBAAIFu2hyVF0pbCbaO3CvAxBw91zqYJdKAAKZyzEbLKuQU-5JZ0rrGa8cAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIFvGhyVF04zjZfOI_AlJGq35lEXRA4AAKayzEbLKuQU117Vvop6LG_AQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F9OBIEbOaB7NZzWicHEHJ%2F9OBIEbOaB7NZzWicHEHJ_prise_AgACAgQAAxkBAAIFvGhyVF04zjZfOI_AlJGq35lEXRA4AAKayzEbLKuQU117Vvop6LG_AQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIG6mhyfuR7W32QqVaykCe-niA-v2bsAAKWzDEb9vmQU91pIDXdC8UsAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FA7HRBajn8Rw1cnCETOjA%2FA7HRBajn8Rw1cnCETOjA_prise_AgACAgQAAxkBAAIG6mhyfuR7W32QqVaykCe-niA-v2bsAAKWzDEb9vmQU91pIDXdC8UsAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIEDWhqb4wMGE5Zu3Qo15tK76mnb2GGAAJ-xzEbDlNRUwVQSIIdPEeIAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F5IPUtgYZUmauw5yz70co%2F5IPUtgYZUmauw5yz70co_prise_AgACAgQAAxkBAAIEDWhqb4wMGE5Zu3Qo15tK76mnb2GGAAJ-xzEbDlNRUwVQSIIdPEeIAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIFumhyVF0mCTprE61-pKekxhHqoI76AAKlyTEbbq6RU5GUpKV8wfmzAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FGpadi3TvZdqN54iKzD5P%2FGpadi3TvZdqN54iKzD5P_prise_AgACAgQAAxkBAAIFumhyVF0mCTprE61-pKekxhHqoI76AAKlyTEbbq6RU5GUpKV8wfmzAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIG8Ghyfuu9xxFnkdlHoWUJtoe0uPciAAKZzDEb9vmQU7dpWD4pntE7AQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FKg0AsUHa56YaiN7RZ1i9%2FKg0AsUHa56YaiN7RZ1i9_prise_AgACAgQAAxkBAAIG8Ghyfuu9xxFnkdlHoWUJtoe0uPciAAKZzDEb9vmQU7dpWD4pntE7AQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIG7Ghyfua8kfm-YQmRDyPln0rEU2avAAKXzDEb9vmQUzvNSI4EnHV3AQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FKg0AsUHa56YaiN7RZ1i9%2FKg0AsUHa56YaiN7RZ1i9_prise_AgACAgQAAxkBAAIG7Ghyfua8kfm-YQmRDyPln0rEU2avAAKXzDEb9vmQUzvNSI4EnHV3AQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIDnmhqT6idmjjBzbXNAugUkw15zI-IAAJIxzEbDlNRUwZ-uilsSmvrAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FbuamDhfLsi2z0Iy5GxHo%2FbuamDhfLsi2z0Iy5GxHo_prise_AgACAgQAAxkBAAIDnmhqT6idmjjBzbXNAugUkw15zI-IAAJIxzEbDlNRUwZ-uilsSmvrAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIG7mhyfumzAp-2sE6IWZ9a-A664_XJAAKYzDEb9vmQU3FaPOF2G4tiAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FA7HRBajn8Rw1cnCETOjA%2FA7HRBajn8Rw1cnCETOjA_prise_AgACAgQAAxkBAAIG7mhyfumzAp-2sE6IWZ9a-A664_XJAAKYzDEb9vmQU3FaPOF2G4tiAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIEC2hqb4xGrWowY7gYiVtERt578HRHAAJ9xzEbDlNRUypiwjp3DfdzAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F5IPUtgYZUmauw5yz70co%2F5IPUtgYZUmauw5yz70co_prise_AgACAgQAAxkBAAIEC2hqb4xGrWowY7gYiVtERt578HRHAAJ9xzEbDlNRUypiwjp3DfdzAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIEDmhqb4wDlE4Dn8d-R-AYl662Cv5NAAJ_xzEbDlNRU2DyOKtIVu_OAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F5IPUtgYZUmauw5yz70co%2F5IPUtgYZUmauw5yz70co_prise_AgACAgQAAxkBAAIEDmhqb4wDlE4Dn8d-R-AYl662Cv5NAAJ_xzEbDlNRU2DyOKtIVu_OAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAIGz2hydFMEvkKGiISE_90d5pxPdORyAALfyzEbLKuQU4tDbuOa8zFhAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F9OBIEbOaB7NZzWicHEHJ%2F9OBIEbOaB7NZzWicHEHJ_prise_AgACAgQAAxkBAAIGz2hydFMEvkKGiISE_90d5pxPdORyAALfyzEbLKuQU4tDbuOa8zFhAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAICemhoTJ8DKBJ9h28usKBc43ox_HRZAAJiyTEbp55JUw2YQkiDtLCCAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2Fd44U8o8Qtso6xMQOpDM0%2Fd44U8o8Qtso6xMQOpDM0_prise_AgACAgQAAxkBAAICemhoTJ8DKBJ9h28usKBc43ox_HRZAAJiyTEbp55JUw2YQkiDtLCCAQADAgADeQADNgQ.jpg?alt=media",
+    "AgACAgQAAxkBAAID62hqbx7W5BQAAQ59glzqgB0RQ9FgagACfMcxGw5TUVMH_uEfLWRBhgEAAwIAA3kAAzYE": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2F5IPUtgYZUmauw5yz70co%2F5IPUtgYZUmauw5yz70co_prise_AgACAgQAAxkBAAID62hqbx7W5BQAAQ59glzqgB0RQ9FgagACfMcxGw5TUVMH_uEfLWRBhgEAAwIAA3kAAzYE.jpg?alt=media",
+    "AgACAgQAAxkBAAIDZWhqRkXeVrWcbRYF1H3e8BvQzjUrAAKs1DEbMpFQU2LNn9H_ru3AAQADAgADeQADNgQ": "https://firebasestorage.googleapis.com/v0/b/enco-prestarail.firebasestorage.app/o/sync%2FBvcvgncJNtgxg2iy1U62%2FBvcvgncJNtgxg2iy1U62_prise_AgACAgQAAxkBAAIDZWhqRkXeVrWcbRYF1H3e8BvQzjUrAAKs1DEbMpFQU2LNn9H_ru3AAQADAgADeQADNgQ.jpg?alt=media"
+  },
+  "prises_errors": [],
+  "anomalies_errors": [
+    {
+      "doc_id": "2qALX0VnZbigNr5MwPYB",
+      "missing_id": "AgACAgQAAxkBAAIGIGhyVwMxrQKa-iPyt6YwZtGW6qc-AAKiyzEbLKuQU2_zzXhCy-qoAQADAgADeQADNgQ"
+    },
+    {
+      "doc_id": "Hy3foUjDwtBbfVCmt9Uq",
+      "missing_id": "AgACAgQAAxkBAAIGIGhyVwMxrQKa-iPyt6YwZtGW6qc-AAKiyzEbLKuQU2_zzXhCy-qoAQADAgADeQADNgQ"
+    },
+    {
+      "doc_id": "x3jTimyLoIKx34Edjzmt",
+      "missing_id": "AgACAgQAAxkBAAIES2hqcZjEduhJZPTNhqCmkGMIflclAAI8xjEb-Q5RU2e5ctdCEio_AQADAgADeAADNgQ"
+    },
+    {
+      "doc_id": "zOVuSoZytdkeSmdQPjjL",
+      "missing_id": "AgACAgQAAxkBAAIES2hqcZjEduhJZPTNhqCmkGMIflclAAI8xjEb-Q5RU2e5ctdCEio_AQADAgADeAADNgQ"
+    }
+  ]
+}

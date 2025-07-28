@@ -108,9 +108,6 @@ async def confirm_rapport(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "type_rapport": context.user_data.get('type_rapport', ''),
         "description": context.user_data.get('description', ''),
         "photo_file_id": context.user_data.get('photo_file_id'),
-        "photoURL": context.user_data.get('photo_url', None),
-        "urlPhoto": context.user_data.get('photo_url', None),
-        "url": context.user_data.get('photo_url', None),
         "type": "rapport_technique",
         "handled": False
     }

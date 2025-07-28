@@ -8,8 +8,6 @@ from datetime import datetime
 UPLOAD_DOC, SAISIE_INFOS, CONFIRM = range(3)
 
 async def start_bon_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return ConversationHandler.END  # Sécurité si message absent (ex: callback)
     await update.message.reply_text(
         "📄 **Bon d'attachement**\n\n"
         "Envoie une photo ou un document PDF du bon d'attachement (obligatoire).",
@@ -21,8 +19,6 @@ async def start_bon_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return UPLOAD_DOC
 
 async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return ConversationHandler.END  # Sécurité si message absent (ex: callback)
     if update.message.text and update.message.text == "❌ Annuler":
         await update.message.reply_text("❌ Bon d'attachement annulé.")
         return ConversationHandler.END
@@ -41,13 +37,10 @@ async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❗ Envoie une photo ou un document PDF du bon d'attachement.")
         return UPLOAD_DOC
-
-    # Correction du bug : context.user_data peut être None si non initialisé
-    if context.user_data is None:
-        context.user_data = {}
+    
     context.user_data['file_id'] = file_id
     context.user_data['file_type'] = file_type
-
+    
     await update.message.reply_text(
         "✅ Document reçu.\n\n"
         "Saisis les informations du bon d'attachement :\n"
@@ -60,13 +53,10 @@ async def receive_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return SAISIE_INFOS
 
 async def receive_infos(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        # Sécurité si message absent ou pas de texte (ex: callback ou document)
-        return ConversationHandler.END
     if update.message.text == "❌ Annuler":
         await update.message.reply_text("❌ Bon d'attachement annulé.")
         return ConversationHandler.END
-
+    
     # Parser les informations
     parts = update.message.text.split('|')
     if len(parts) < 2:
@@ -77,13 +67,10 @@ async def receive_infos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     type_travail = parts[1].strip()
     description = parts[2].strip() if len(parts) > 2 else ""
     
-    # Correction du bug : context.user_data peut être None si non initialisé
-    if context.user_data is None:
-        context.user_data = {}
     context.user_data['numero'] = numero
     context.user_data['type_travail'] = type_travail
     context.user_data['description'] = description
-
+    
     await update.message.reply_text(
         f"📋 **Récapitulatif Bon d'attachement**\n\n"
         f"📄 Numéro : {numero}\n"
@@ -95,32 +82,23 @@ async def receive_infos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CONFIRM
 
 async def confirm_bon(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Sécurité : vérifier que le message et le texte existent
-    if not update.message or not update.message.text or update.message.text.lower() != "oui":
-        if update.message:
-            await update.message.reply_text("❌ Bon d'attachement annulé.")
+    if update.message.text.lower() != "oui":
+        await update.message.reply_text("❌ Bon d'attachement annulé.")
         return ConversationHandler.END
-
-    user = update.message.from_user if update.message else None
+    
+    user = update.message.from_user
     
     # Enregistrer dans Firestore
     bon_data = {
-        "operatorId": getattr(user, "id", None),
-        "operatorName": getattr(user, "full_name", None),
+        "operatorId": user.id,
+        "operatorName": user.full_name,
         "timestamp": datetime.now().isoformat(),
-        "numero": context.user_data['numero'] if context.user_data else None,
-        "type_travail": context.user_data['type_travail'] if context.user_data else None,
-        "description": context.user_data['description'] if context.user_data else None,
-        "file_id": context.user_data['file_id'] if context.user_data else None,
-        "file_type": context.user_data['file_type'] if context.user_data else None,
-        "type": "bon_attachement",
-        "urlDocument": (
-            context.user_data['file_url']
-            if context.user_data
-            and context.user_data.get('file_type') == 'photo'
-            and 'file_url' in context.user_data
-            else None
-        )
+        "numero": context.user_data['numero'],
+        "type_travail": context.user_data['type_travail'],
+        "description": context.user_data['description'],
+        "file_id": context.user_data['file_id'],
+        "file_type": context.user_data['file_type'],
+        "type": "bon_attachement"
     }
     
     try:

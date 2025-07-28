@@ -215,12 +215,12 @@ export const getOperatorBadges = (score, actions) => {
 /**
  * Récupère le classement des opérateurs
  */
-export const getOperatorRanking = async (limit = 10) => {
+export const getOperatorRanking = async (limitCount = 10) => {
   try {
     const operateursQuery = query(
       collection(db, 'operateurs'),
       orderBy('score', 'desc'),
-      limit(limit)
+      limit(limitCount)
     );
     
     const snapshot = await getDocs(operateursQuery);

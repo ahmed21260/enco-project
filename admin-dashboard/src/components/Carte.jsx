@@ -70,7 +70,7 @@ const Carte = () => {
       setUrgences(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     
-    // Anomalies non résolues et ping immédiat
+    // Anomalies non résolues
     const qAnomalies = query(collection(db, 'anomalies'), where('handled', '==', false));
     const unsubscribeAnomalies = onSnapshot(qAnomalies, (snapshot) => {
       setAnomalies(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -210,7 +210,7 @@ const Carte = () => {
         ))}
 
         {/* Anomalies - Ping orange */}
-        {anomalies.filter(a => a.ping === true || ["en_attente_confirmation", "confirmé", "confirmee", "valide"].includes((a.statut || '').toLowerCase())).map((anomalie) => (
+        {anomalies.map((anomalie) => (
           <Marker
             key={`anomalie-${anomalie.id}`}
             position={[anomalie.latitude, anomalie.longitude]}
@@ -238,11 +238,6 @@ const Carte = () => {
               <div><b>Anomalie :</b> {anomalie.anomalie_specifique || 'Non spécifiée'}</div>
               <div><b>Description :</b> {anomalie.description || 'Aucune'}</div>
               <div><b>Heure :</b> {new Date(anomalie.timestamp).toLocaleString('fr-FR')}</div>
-              {anomalie.photo_url && (
-                <div style={{marginTop: 10}}>
-                  <img src={anomalie.photo_url} alt="Photo anomalie" style={{maxWidth: 200, borderRadius: 8}} />
-                </div>
-              )}
               <div style={{marginTop:'8px'}}>
                 <button 
                   onClick={() => handleResolveAnomalie(anomalie.id)}

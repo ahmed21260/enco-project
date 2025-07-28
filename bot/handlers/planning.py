@@ -73,9 +73,19 @@ async def show_operator_planning(update: Update, context: ContextTypes.DEFAULT_T
         message += f"🕗 **Début :** {planning_jour.get('debut', '07:00')}\n"
         message += f"🕕 **Fin :** {planning_jour.get('fin', '17:00')}\n"
         message += f"🏗️ **Chantier :** {planning_jour.get('chantier', 'À confirmer')}\n"
+        if planning_jour.get('address'):
+            message += f"📍 **Adresse :** {planning_jour.get('address')}\n"
+        if planning_jour.get('contact'):
+            message += f"📞 **Contact :** {planning_jour.get('contact')}\n"
         message += f"🚜 **Machine :** {planning_jour.get('machine', 'À confirmer')}\n"
         message += f"📋 **Tâches :** {planning_jour.get('taches', 'Maintenance préventive')}\n"
         message += f"👷 **Équipe :** {planning_jour.get('equipe', 'Équipe 1')}\n"
+        
+        # Afficher la période si disponible
+        if planning_jour.get('date_debut') and planning_jour.get('date_fin'):
+            date_debut = datetime.strptime(planning_jour['date_debut'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            date_fin = datetime.strptime(planning_jour['date_fin'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            message += f"📅 **Période :** {date_debut} - {date_fin}\n"
     else:
         message += "⚠️ Planning non défini pour aujourd'hui\n"
     
@@ -86,8 +96,18 @@ async def show_operator_planning(update: Update, context: ContextTypes.DEFAULT_T
         message += f"🕗 **Début :** {planning_demain.get('debut', '07:00')}\n"
         message += f"🕕 **Fin :** {planning_demain.get('fin', '17:00')}\n"
         message += f"🏗️ **Chantier :** {planning_demain.get('chantier', 'À confirmer')}\n"
+        if planning_demain.get('address'):
+            message += f"📍 **Adresse :** {planning_demain.get('address')}\n"
+        if planning_demain.get('contact'):
+            message += f"📞 **Contact :** {planning_demain.get('contact')}\n"
         message += f"🚜 **Machine :** {planning_demain.get('machine', 'À confirmer')}\n"
         message += f"📋 **Tâches :** {planning_demain.get('taches', 'Maintenance préventive')}\n"
+        
+        # Afficher la période si disponible
+        if planning_demain.get('date_debut') and planning_demain.get('date_fin'):
+            date_debut = datetime.strptime(planning_demain['date_debut'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            date_fin = datetime.strptime(planning_demain['date_fin'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            message += f"📅 **Période :** {date_debut} - {date_fin}\n"
     else:
         message += "⚠️ Planning non défini pour demain\n"
     
@@ -131,7 +151,7 @@ async def show_operator_planning(update: Update, context: ContextTypes.DEFAULT_T
         print(f"Erreur enregistrement consultation: {e}")
 
 async def get_operator_planning(operator_id):
-    """Récupérer le planning complet de l'opérateur"""
+    """Récupérer le planning complet de l'opérateur depuis la collection 'planning' de la dashboard"""
     today = datetime.now().date().isoformat()
     tomorrow = (datetime.now() + timedelta(days=1)).date().isoformat()
     
@@ -147,15 +167,52 @@ async def get_operator_planning(operator_id):
     }
     
     try:
-        # Récupérer le planning depuis Firestore
-        planning_docs = list(db.collection('plannings_operateurs').where('operatorId', '==', str(operator_id)).stream())
+        # Récupérer le planning depuis la collection 'planning' de la dashboard
+        planning_docs = list(db.collection('planning').where('operateur_id', '==', str(operator_id)).stream())
         
+        # Chercher les plannings pour aujourd'hui et demain
         for doc in planning_docs:
             data = doc.to_dict()
-            if data.get('date') == today:
-                planning_info['planning_jour'] = data
-            elif data.get('date') == tomorrow:
-                planning_info['planning_lendemain'] = data
+            date_debut = data.get('date_debut')
+            date_fin = data.get('date_fin')
+            
+            # Vérifier si le planning couvre aujourd'hui
+            if date_debut and date_fin:
+                date_debut_obj = datetime.strptime(date_debut, '%Y-%m-%d').date()
+                date_fin_obj = datetime.strptime(date_fin, '%Y-%m-%d').date()
+                today_obj = datetime.now().date()
+                
+                if date_debut_obj <= today_obj <= date_fin_obj:
+                    # Planning pour aujourd'hui
+                    planning_info['planning_jour'] = {
+                        'debut': '06:00' if data.get('equipe') == 'equipe1' else '14:00' if data.get('equipe') == 'equipe2' else '22:00',
+                        'fin': '14:00' if data.get('equipe') == 'equipe1' else '22:00' if data.get('equipe') == 'equipe2' else '06:00',
+                        'chantier': data.get('chantier_name', 'Chantier principal'),
+                        'machine': data.get('machine_number', 'Machine non spécifiée'),
+                        'taches': 'Maintenance préventive',
+                        'equipe': data.get('equipe', 'Équipe 1'),
+                        'address': data.get('chantier_address', ''),
+                        'contact': data.get('contact_info', ''),
+                        'date_debut': date_debut,
+                        'date_fin': date_fin
+                    }
+                
+                # Vérifier si le planning couvre demain
+                tomorrow_obj = (datetime.now() + timedelta(days=1)).date()
+                if date_debut_obj <= tomorrow_obj <= date_fin_obj:
+                    # Planning pour demain
+                    planning_info['planning_lendemain'] = {
+                        'debut': '06:00' if data.get('equipe') == 'equipe1' else '14:00' if data.get('equipe') == 'equipe2' else '22:00',
+                        'fin': '14:00' if data.get('equipe') == 'equipe1' else '22:00' if data.get('equipe') == 'equipe2' else '06:00',
+                        'chantier': data.get('chantier_name', 'Chantier principal'),
+                        'machine': data.get('machine_number', 'Machine non spécifiée'),
+                        'taches': 'Maintenance préventive',
+                        'equipe': data.get('equipe', 'Équipe 1'),
+                        'address': data.get('chantier_address', ''),
+                        'contact': data.get('contact_info', ''),
+                        'date_debut': date_debut,
+                        'date_fin': date_fin
+                    }
         
         # Si pas de planning défini, créer un planning par défaut
         if not planning_info['planning_jour']:
@@ -179,14 +236,14 @@ async def get_operator_planning(operator_id):
             }
         
         # Vérifier prise de poste
-        prises = list(db.collection('positions_operateurs').where('operatorId', '==', str(operator_id)).where('type', '==', 'prise_de_poste').stream())
+        prises = list(db.collection('prises_poste').where('operateur_id', '==', str(operator_id)).where('heure', '>=', today).stream())
         planning_info['prise_effectuee'] = len(prises) > 0
         
         # Récupérer les actions du jour
-        planning_info['photos'] = list(db.collection('photos').where('operatorId', '==', str(operator_id)).stream())
-        planning_info['bons'] = list(db.collection('bons_attachement').where('operatorId', '==', str(operator_id)).stream())
-        planning_info['anomalies'] = list(db.collection('anomalies').where('operatorId', '==', str(operator_id)).stream())
-        planning_info['urgences'] = list(db.collection('urgences').where('operatorId', '==', str(operator_id)).stream())
+        planning_info['photos'] = list(db.collection('photos').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
+        planning_info['bons'] = list(db.collection('bons_attachement').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
+        planning_info['anomalies'] = list(db.collection('anomalies').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
+        planning_info['urgences'] = list(db.collection('urgences').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
         
         # Alertes si pas de prise de poste
         if not planning_info['prise_effectuee']:
@@ -217,8 +274,18 @@ async def show_all_plannings(update: Update, context: ContextTypes.DEFAULT_TYPE)
             if planning.get('planning_jour'):
                 p = planning['planning_jour']
                 message += f"   🏗️ {p.get('chantier', 'Chantier')} | 🚜 {p.get('machine', 'Machine')}\n"
+                if p.get('address'):
+                    message += f"   📍 {p.get('address')}\n"
+                if p.get('contact'):
+                    message += f"   📞 {p.get('contact')}\n"
                 message += f"   🕗 {p.get('debut', '07:00')} - {p.get('fin', '17:00')}\n"
                 message += f"   📋 {p.get('taches', 'Tâches')}\n"
+                
+                # Afficher la période si disponible
+                if p.get('date_debut') and p.get('date_fin'):
+                    date_debut = datetime.strptime(p['date_debut'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                    date_fin = datetime.strptime(p['date_fin'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                    message += f"   📅 Période: {date_debut} - {date_fin}\n"
             else:
                 message += f"   ⚠️ Planning non défini\n"
             

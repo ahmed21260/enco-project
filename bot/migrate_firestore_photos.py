@@ -1,12 +1,12 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
-
+BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET', 'enco-prestarail.firebasestorage.app')
 # Initialisation Firebase
 if not firebase_admin._apps:
     cred_path = os.getenv('FIREBASE_CREDENTIALS', 'firebase_credentials.json')
     cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {'storageBucket': BUCKET})
 db = firestore.client()
 
 # Mapping manuel possible si besoin (ex: { 'operatorId': 'operateur_id' })

@@ -5,6 +5,15 @@ import logging
 import os
 from datetime import datetime
 from PIL import Image
+import os
+from dotenv import load_dotenv
+load_dotenv()
+import firebase_admin
+from firebase_admin import credentials
+CRED_PATH = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', 'serviceAccountKey_railway.txt')
+BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET', 'enco-prestarail.firebasestorage.app')
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(credentials.Certificate(CRED_PATH), {'storageBucket': BUCKET})
 
 # États de conversation
 PHOTO, DESCRIPTION, GPS = range(3)
@@ -27,7 +36,6 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data = {}
     
     if update.message.photo:
-        # Traitement de la photo
         photo = update.message.photo[-1]
         file = await context.bot.get_file(photo.file_id)
 
@@ -64,8 +72,6 @@ async def receive_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "operatorName": user.full_name,
             "timestamp": update.message.date.isoformat(),
             "photoURL": photoURL,
-            "urlPhoto": photoURL,
-            "url": photoURL,
             "description": context.user_data.get('description', ''),
             "type": "photo_mission"
         }

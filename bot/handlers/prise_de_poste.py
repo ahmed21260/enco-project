@@ -5,10 +5,20 @@ from services.enco_ai_assistant import ENCOAIAssistant
 import logging
 from handlers.shared import menu_principal, build_ai_prompt
 import os
+from dotenv import load_dotenv
+load_dotenv()
+import firebase_admin
+from firebase_admin import credentials
+CRED_PATH = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', 'serviceAccountKey_railway.txt')
+BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET', 'enco-prestarail.firebasestorage.app')
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(credentials.Certificate(CRED_PATH), {'storageBucket': BUCKET})
 from PIL import Image
 from utils.firestore import upload_photo_to_storage
+from datetime import datetime
 
-GPS, CHANTIER, MACHINE, PHOTOS, CHECKLIST, CONFIRM = range(6)
+# Ajout des nouveaux états
+GPS, POSTE, POSTE_SAISIE, CHANTIER_CONFIRM, CHANTIER_SAISIE, MACHINE, PHOTOS, CHECKLIST, CONFIRM = range(9)
 
 PHOTO_LABELS = ["Photo avant", "Photo arrière", "Photo côté", "Photo machine"]
 CHECKLIST_QUESTIONS = [
@@ -50,38 +60,117 @@ async def receive_gps(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❗ Localisation obligatoire pour commencer la prise de poste.")
         return GPS
     context.user_data['gps'] = update.message.location
-    reply_markup = ReplyKeyboardMarkup([
-        ["🏗 Indique le chantier (ou scanne le QR code chantier)"],
-        ["🤖 Aide IA"]
-    ], resize_keyboard=True)
-    await update.message.reply_text(
-        "🏗 Indique le chantier (ou scanne le QR code chantier) :",
-        reply_markup=reply_markup
-    )
-    logging.info(f"[PRISE DE POSTE] Localisation reçue pour user {update.effective_user.id}")
-    return CHANTIER
+    # --- AJOUT : récupération du poste habituel ---
+    user = update.effective_user
+    poste = ''
+    try:
+        op_doc = db.collection('operateurs').document(str(user.id)).get()
+        if op_doc.exists:
+            poste = op_doc.to_dict().get('poste', '')
+    except Exception as e:
+        print(f"Erreur récupération poste opérateur: {e}")
+    context.user_data['poste_habituel'] = poste
+    if poste:
+        reply_markup = ReplyKeyboardMarkup([
+            ["Confirmer", "Modifier"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True)
+        await update.message.reply_text(f"Ton poste habituel est : {poste}. Veux-tu le confirmer ou le modifier ?", reply_markup=reply_markup)
+        return POSTE
+    else:
+        await update.message.reply_text("Merci de saisir ton poste :", reply_markup=ReplyKeyboardMarkup([["🤖 Aide IA"]], resize_keyboard=True))
+        return POSTE_SAISIE
 
-async def receive_chantier(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def receive_poste(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.effective_user:
         return ConversationHandler.END
     if not hasattr(context, 'user_data') or context.user_data is None:
         context.user_data = {}
-    if update.message and update.message.text in ["🤖 Aide IA", "💬 Aide IA"]:
-        assistant = ENCOAIAssistant()
-        prompt = build_ai_prompt("Aide demandée pour l'étape Chantier de la prise de poste.", context={"workflow": "prise_de_poste", "etape": "CHANTIER"})
-        suggestion = await assistant.generate_railway_response(prompt)
-        await update.message.reply_text(f"💡 Suggestion IA : {suggestion}")
-        return CHANTIER
-    context.user_data['chantier'] = update.message.text
-    reply_markup = ReplyKeyboardMarkup([
-        ["🚜 Scanne le QR code machine ou saisis l'ID machine"],
-        ["🤖 Aide IA"]
-    ], resize_keyboard=True)
-    await update.message.reply_text(
-        "🚜 Scanne le QR code machine ou saisis l'ID machine :",
-        reply_markup=reply_markup
-    )
-    logging.info(f"[PRISE DE POSTE] Chantier reçu pour user {update.effective_user.id}")
+    if update.message.text == "Confirmer":
+        context.user_data['poste'] = context.user_data.get('poste_habituel', '')
+        # Passe à la confirmation chantier
+        chantier = ''
+        user = update.effective_user
+        try:
+            op_doc = db.collection('operateurs').document(str(user.id)).get()
+            if op_doc.exists:
+                chantier = op_doc.to_dict().get('chantier', '')
+        except Exception as e:
+            print(f"Erreur récupération chantier opérateur: {e}")
+        context.user_data['chantier_habituel'] = chantier
+        if chantier:
+            reply_markup = ReplyKeyboardMarkup([
+                ["Confirmer", "Modifier"],
+                ["🤖 Aide IA"]
+            ], resize_keyboard=True)
+            await update.message.reply_text(f"Ton chantier habituel est : {chantier}. Veux-tu le confirmer ou le modifier ?", reply_markup=reply_markup)
+            return CHANTIER_CONFIRM
+        else:
+            await update.message.reply_text("Merci de saisir ton chantier :", reply_markup=ReplyKeyboardMarkup([["🤖 Aide IA"]], resize_keyboard=True))
+            return CHANTIER_SAISIE
+    elif update.message.text == "Modifier":
+        await update.message.reply_text("Merci de saisir ton poste :", reply_markup=ReplyKeyboardMarkup([["🤖 Aide IA"]], resize_keyboard=True))
+        return POSTE_SAISIE
+    else:
+        await update.message.reply_text("Merci de choisir 'Confirmer' ou 'Modifier'.", reply_markup=ReplyKeyboardMarkup([["Confirmer", "Modifier"], ["🤖 Aide IA"]], resize_keyboard=True))
+        return POSTE
+
+async def receive_poste_saisie(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    poste = (update.message.text or '').strip()
+    if not poste:
+        await update.message.reply_text("Merci de saisir un poste valide.")
+        return POSTE_SAISIE
+    context.user_data['poste'] = poste
+    # Passe à la confirmation chantier
+    chantier = ''
+    user = update.effective_user
+    try:
+        op_doc = db.collection('operateurs').document(str(user.id)).get()
+        if op_doc.exists:
+            chantier = op_doc.to_dict().get('chantier', '')
+    except Exception as e:
+        print(f"Erreur récupération chantier opérateur: {e}")
+    context.user_data['chantier_habituel'] = chantier
+    if chantier:
+        reply_markup = ReplyKeyboardMarkup([
+            ["Confirmer", "Modifier"],
+            ["🤖 Aide IA"]
+        ], resize_keyboard=True)
+        await update.message.reply_text(f"Ton chantier habituel est : {chantier}. Veux-tu le confirmer ou le modifier ?", reply_markup=reply_markup)
+        return CHANTIER_CONFIRM
+    else:
+        await update.message.reply_text("Merci de saisir ton chantier :", reply_markup=ReplyKeyboardMarkup([["🤖 Aide IA"]], resize_keyboard=True))
+        return CHANTIER_SAISIE
+
+async def receive_chantier_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    if update.message.text == "Confirmer":
+        context.user_data['chantier'] = context.user_data.get('chantier_habituel', '')
+        return MACHINE
+    elif update.message.text == "Modifier":
+        await update.message.reply_text("Merci de saisir ton chantier :", reply_markup=ReplyKeyboardMarkup([["🤖 Aide IA"]], resize_keyboard=True))
+        return CHANTIER_SAISIE
+    else:
+        await update.message.reply_text("Merci de choisir 'Confirmer' ou 'Modifier'.", reply_markup=ReplyKeyboardMarkup([["Confirmer", "Modifier"], ["🤖 Aide IA"]], resize_keyboard=True))
+        return CHANTIER_CONFIRM
+
+async def receive_chantier_saisie(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.effective_user:
+        return ConversationHandler.END
+    if not hasattr(context, 'user_data') or context.user_data is None:
+        context.user_data = {}
+    chantier = (update.message.text or '').strip()
+    if not chantier:
+        await update.message.reply_text("Merci de saisir un chantier valide.")
+        return CHANTIER_SAISIE
+    context.user_data['chantier'] = chantier
     return MACHINE
 
 async def receive_machine(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,15 +238,29 @@ async def receive_photos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Erreur resize: {e}")
 
     firebase_path = f"prises_poste/{user.id}/{file_name}"
-    print(f"Appel upload_photo_to_storage avec {file_path} -> {firebase_path}")
     photo_url = upload_photo_to_storage(file_path, firebase_path)
-    print(f"Résultat upload : {photo_url}")
+    print("DEBUG photo_url uploadée:", photo_url)
 
     # Stocke le file_id ET l'URL
     context.user_data['photos'].append(photo.file_id)
-    if 'photos_urls' not in context.user_data:
+    # Correction: toujours initialiser photos_urls comme une liste
+    if 'photos_urls' not in context.user_data or not isinstance(context.user_data['photos_urls'], list):
         context.user_data['photos_urls'] = []
-    context.user_data['photos_urls'].append(photo_url)
+    if photo_url:
+        context.user_data['photos_urls'].append(photo_url)
+    print("DEBUG photos_urls après ajout:", context.user_data['photos_urls'])
+
+    photo_doc = {
+        "photo_file_id": photo.file_id,
+        "url": photo_url,
+        "timestamp": update.message.date.isoformat(),
+        "type": "prise_de_poste",
+        "operatorId": user.id,
+        "operatorName": user.full_name,
+        "chantier": context.user_data.get('chantier', ''),
+        "machine": context.user_data.get('machine', ''),
+    }
+    db.collection('photos').add(photo_doc)
 
     idx += 1
     context.user_data['photo_index'] = idx
@@ -256,6 +359,16 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user or not loc:
         await update.message.reply_text("❌ Erreur : informations utilisateur ou localisation manquantes.")
         return ConversationHandler.END
+    # --- AJOUT : récupération automatique du poste depuis Firestore ---
+    poste = ''
+    try:
+        op_doc = db.collection('operateurs').document(str(user.id)).get()
+        if op_doc.exists:
+            poste = op_doc.to_dict().get('poste', '')
+    except Exception as e:
+        print(f"Erreur récupération poste opérateur: {e}")
+    context.user_data['poste'] = poste
+    # --- FIN AJOUT ---
     position_data = {
         "operateur_id": user.id,
         "operatorId": user.id,
@@ -266,6 +379,7 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "type": "prise_de_poste",
         "chantier": context.user_data.get('chantier', ''),
         "machine": context.user_data.get('machine', ''),
+        "poste": context.user_data.get('poste', ''),
         "photos_file_ids": context.user_data.get('photos', []),
         "photos_urls": context.user_data.get('photos_urls', []),
         "actif": True,
@@ -273,6 +387,11 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "checklistEffectuee": True
     }
     save_position(position_data)
+    # Patch: garantir la synchronisation et la présence de photos_urls
+    photos_urls = context.user_data.get('photos_urls')
+    if not isinstance(photos_urls, list):
+        photos_urls = []
+    print("DEBUG photos_urls juste avant Firestore:", photos_urls)
     db.collection('prises_poste').add({
         "operatorId": user.id,
         "nom": user.full_name,
@@ -281,10 +400,9 @@ async def confirm_prise(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "longitude": loc.longitude,
         "chantier": context.user_data.get('chantier', ''),
         "machine": context.user_data.get('machine', ''),
+        "poste": context.user_data.get('poste', ''),
         "photos_file_ids": context.user_data.get('photos', []),
-        "photos_urls": context.user_data.get('photos_urls', []),
-        "urlPhoto": context.user_data.get('photos_urls', [None])[0],
-        "url": context.user_data.get('photos_urls', [None])[0],
+        "photos_urls": photos_urls,
         "type": "prise_de_poste",
         "checklist": context.user_data.get('checklist', {}),
         "checklistEffectuee": True
@@ -313,7 +431,10 @@ def get_prise_wizard_handler():
         ],
         states={
             GPS: [MessageHandler(filters.LOCATION | filters.TEXT & ~filters.COMMAND, receive_gps)],
-            CHANTIER: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_chantier)],
+            POSTE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_poste)],
+            POSTE_SAISIE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_poste_saisie)],
+            CHANTIER_CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_chantier_confirm)],
+            CHANTIER_SAISIE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_chantier_saisie)],
             MACHINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_machine)],
             PHOTOS: [MessageHandler(filters.PHOTO | filters.TEXT & ~filters.COMMAND, receive_photos)],
             CHECKLIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_checklist)],
