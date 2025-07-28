@@ -3,7 +3,7 @@ import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore'
 import { db } from '../firebaseConfig';
 import { generatePlanningPDF, sendPlanningPDF } from '../services/pdfGenerator';
 import { sendPlanningReminder, notifySupervisor } from '../services/emailService';
-import { sendTelegramMessage } from '../services/telegramService';
+import { sendTelegramMessage, sendTelegramFile } from '../services/telegramService';
 import './PlanningPro.css';
 
 const PlanningPro = () => {
@@ -241,6 +241,79 @@ const PlanningPro = () => {
     } catch (error) {
       setMessage('❌ Erreur lors de l\'envoi Telegram');
       console.error('Erreur envoi Telegram:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendPDFFile = async (planningEntry) => {
+    setLoading(true);
+    try {
+      console.log('📄 Envoi du fichier PDF via Telegram:', planningEntry);
+      
+      // Chercher l'opérateur dans la liste chargée
+      const operateur = operateurs.find(op => op.id === planningEntry.operateur_id);
+      const telegramId = planningEntry.operateur_telegram_id || 
+                        operateur?.telegram_id || 
+                        operateur?.telegramUserId ||
+                        operateur?.id;
+      
+      if (!telegramId) {
+        setMessage('❌ Aucun ID Telegram trouvé pour cet opérateur.');
+        return;
+      }
+
+      // Générer le PDF
+      const pdfDoc = await generatePlanningPDF({
+        operateur: planningEntry.operateur_nom,
+        date_debut: planningEntry.date_debut,
+        date_fin: planningEntry.date_fin,
+        equipe: planningEntry.equipe,
+        chantier: planningEntry.chantier_name,
+        address: planningEntry.chantier_address,
+        contact: planningEntry.contact_info,
+        machine: planningEntry.machine_number,
+        horaires: equipes.find(eq => eq.id === planningEntry.equipe)?.horaires || '',
+        instructions: generateInstructions(planningEntry.chantier_name)
+      });
+
+      // Convertir le PDF en Blob
+      const pdfBlob = pdfDoc.output('blob');
+      
+      // Préparer les données pour l'envoi
+      const telegramData = {
+        operateur: planningEntry.operateur_nom,
+        telegram_id: telegramId,
+        date_debut: planningEntry.date_debut,
+        date_fin: planningEntry.date_fin,
+        equipe: planningEntry.equipe,
+        chantier: planningEntry.chantier_name,
+        address: planningEntry.chantier_address,
+        contact: planningEntry.contact_info,
+        machine: planningEntry.machine_number,
+        horaires: equipes.find(eq => eq.id === planningEntry.equipe)?.horaires || '',
+        instructions: generateInstructions(planningEntry.chantier_name)
+      };
+
+      // Envoyer le fichier PDF via Telegram
+      const fileResult = await sendTelegramFile(telegramData, pdfBlob);
+      
+      if (fileResult.success) {
+        await updateDoc(doc(db, 'planning', planningEntry.id), {
+          envoyé_pdf_telegram: true,
+          envoyé_pdf_telegram_le: new Date().toISOString(),
+          telegram_file_id: fileResult.documentId,
+          telegram_id_utilisé: telegramId
+        });
+
+        setMessage('✅ Fichier PDF envoyé sur Telegram !');
+      } else {
+        setMessage('❌ Erreur lors de l\'envoi du fichier PDF');
+      }
+      loadPlanning();
+    } catch (error) {
+      setMessage('❌ Erreur lors de l\'envoi du fichier PDF');
+      console.error('Erreur envoi fichier PDF:', error);
     } finally {
       setLoading(false);
     }
@@ -519,6 +592,15 @@ const PlanningPro = () => {
                         📱 Envoyer Telegram
                       </button>
                     )}
+                    {!entry.envoyé_pdf_telegram && entry.operateur_telegram_id && (
+                      <button 
+                        onClick={() => sendPDFFile(entry)}
+                        disabled={loading}
+                        className="action-btn pdf-telegram"
+                      >
+                        📄📱 Envoyer PDF Telegram
+                      </button>
+                    )}
                     {entry.envoyé && !entry.rappel_envoyé && (
                       <button 
                         onClick={() => sendReminder(entry)}
@@ -534,6 +616,9 @@ const PlanningPro = () => {
                     {entry.envoyé_telegram && (
                       <span className="sent-badge telegram">✅ Telegram</span>
                     )}
+                    {entry.envoyé_pdf_telegram && (
+                      <span className="sent-badge pdf-telegram">✅ PDF Telegram</span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -545,4 +630,4 @@ const PlanningPro = () => {
   );
 };
 
-export default PlanningPro; 
+export default PlanningPro;
