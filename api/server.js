@@ -583,6 +583,51 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
     }
 });
 
+// Route pour tester la connexion Telegram (depuis le dashboard)
+app.get('/api/telegram/test-connection', async (req, res) => {
+    try {
+        // Récupérer le token du bot depuis les variables d'environnement
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) {
+            console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Configuration Telegram manquante' 
+            });
+        }
+
+        console.log('🔍 Test de connexion Telegram via API backend...');
+
+        // Appeler l'API Telegram pour tester la connexion
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+        const telegramResult = await telegramResponse.json();
+
+        console.log('📱 Réponse API Telegram (test):', telegramResult);
+
+        if (telegramResult.ok) {
+            return res.json({
+                success: true,
+                botName: telegramResult.result.first_name,
+                botUsername: telegramResult.result.username,
+                botId: telegramResult.result.id
+            });
+        } else {
+            console.error('❌ Erreur API Telegram (test):', telegramResult);
+            return res.status(400).json({
+                success: false,
+                error: telegramResult.description || 'Erreur API Telegram'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur test connexion Telegram:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || 'Erreur interne'
+        });
+    }
+});
+
 // Affichage dynamique de toutes les routes disponibles (compatibilité Railway)
 try {
     const listEndpoints = require('express-list-endpoints');
@@ -608,4 +653,4 @@ app.listen(PORT, () => {
   console.log(`🚨 Urgences: ${baseUrl}/api/urgences`);
   console.log(`👥 Opérateurs: ${baseUrl}/api/operateurs`);
   console.log(`🌍 Environnement: ${isProduction ? 'Production' : 'Développement'}`);
-}); 
+}); v

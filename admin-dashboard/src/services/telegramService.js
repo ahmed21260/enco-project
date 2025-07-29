@@ -123,7 +123,7 @@ export const sendTelegramReminder = async (planningData) => {
     console.log('📱 Rappel Telegram préparé:', telegramPayload);
 
     // ENVOI RÉEL
-    const response = await fetch(`${TELEGRAM_CONFIG.apiUrl}${TELEGRAM_CONFIG.botToken}/sendMessage`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/telegram/send-message`, { // Changed to use API_CONFIG.baseUrl
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -134,14 +134,14 @@ export const sendTelegramReminder = async (planningData) => {
     const result = await response.json();
     console.log('📱 Réponse API Telegram (rappel):', result);
 
-    if (result.ok) {
+    if (result.success) { // Changed to check for success
       return {
         success: true,
-        messageId: result.result.message_id,
+        messageId: result.messageId, // Changed to result.messageId
         sentAt: new Date().toISOString()
       };
     } else {
-      throw new Error(`Erreur Telegram: ${result.description || 'Erreur inconnue'}`);
+      throw new Error(`Erreur Telegram: ${result.error || 'Erreur inconnue'}`); // Changed to result.error
     }
 
   } catch (error) {
@@ -218,7 +218,7 @@ export const sendConfirmationMessage = async (planningData) => {
     console.log('📱 Confirmation Telegram:', telegramPayload);
 
     // ENVOI RÉEL
-    const response = await fetch(`${TELEGRAM_CONFIG.apiUrl}${TELEGRAM_CONFIG.botToken}/sendMessage`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/telegram/send-message`, { // Changed to use API_CONFIG.baseUrl
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -229,14 +229,14 @@ export const sendConfirmationMessage = async (planningData) => {
     const result = await response.json();
     console.log('📱 Réponse API Telegram (confirmation):', result);
 
-    if (result.ok) {
+    if (result.success) { // Changed to check for success
       return {
         success: true,
-        messageId: result.result.message_id,
+        messageId: result.messageId, // Changed to result.messageId
         sentAt: new Date().toISOString()
       };
     } else {
-      throw new Error(`Erreur Telegram: ${result.description || 'Erreur inconnue'}`);
+      throw new Error(`Erreur Telegram: ${result.error || 'Erreur inconnue'}`); // Changed to result.error
     }
 
   } catch (error) {
@@ -254,26 +254,27 @@ export const sendConfirmationMessage = async (planningData) => {
 };
 
 /**
- * Teste la connexion au bot Telegram
+ * Teste la connexion au bot Telegram via notre API backend
  */
 export const testTelegramConnection = async () => {
   try {
     console.log('🔍 Test de connexion Telegram...');
 
-    const response = await fetch(`${TELEGRAM_CONFIG.apiUrl}${TELEGRAM_CONFIG.botToken}/getMe`);
+    // Test via notre API backend
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/telegram/test-connection`);
     const result = await response.json();
 
     console.log('📱 Test connexion Telegram:', result);
 
-    if (result.ok) {
+    if (result.success) {
       return {
         success: true,
-        botName: result.result.first_name,
-        botUsername: result.result.username,
-        botId: result.result.id
+        botName: result.botName || 'ENCO Bot',
+        botUsername: result.botUsername || 'enco_bot',
+        botId: result.botId || 'bot_id'
       };
     } else {
-      throw new Error(`Erreur connexion: ${result.description}`);
+      throw new Error(`Erreur connexion: ${result.error || 'Erreur inconnue'}`);
     }
   } catch (error) {
     console.error('❌ Erreur test connexion Telegram:', error);
