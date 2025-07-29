@@ -477,6 +477,40 @@ async def error_handler(update, context):
         logger.error(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
         print(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
 
+async def validate_telegram_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler de validation pour filtrer les requêtes invalides"""
+    if not update:
+        return False
+    
+    # Vérifier si c'est un vrai message Telegram
+    if not hasattr(update, 'update_id') or update.update_id is None:
+        logger.debug("🚫 Update invalide ignoré (pas d'update_id)")
+        return False
+    
+    # Vérifier si l'update a au moins un type de contenu valide
+    has_valid_content = (
+        update.message is not None or
+        update.edited_message is not None or
+        update.channel_post is not None or
+        update.edited_channel_post is not None or
+        update.inline_query is not None or
+        update.chosen_inline_result is not None or
+        update.callback_query is not None or
+        update.shipping_query is not None or
+        update.pre_checkout_query is not None or
+        update.poll is not None or
+        update.poll_answer is not None or
+        update.my_chat_member is not None or
+        update.chat_member is not None or
+        update.chat_join_request is not None
+    )
+    
+    if not has_valid_content:
+        logger.debug("🚫 Update invalide ignoré (pas de contenu valide)")
+        return False
+    
+    return True
+
 # Exemple d'écoute groupée Firestore pour tous les messages IA (pour dashboard)
 # (À utiliser côté dashboard JS/TS)
 '''
@@ -502,7 +536,10 @@ def main():
     print("=== Application Telegram construite ===")
     application.add_error_handler(error_handler)
     
-    # Ajouter le handler de logging en premier (priorité haute)
+    # Ajouter le handler de validation en premier (priorité maximale)
+    application.add_handler(MessageHandler(filters.ALL, validate_telegram_update), group=0)
+    
+    # Ajouter le handler de logging en deuxième (priorité haute)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=1)
     
     # Ajouter un handler universel pour les messages texte (IA + Firestore)
