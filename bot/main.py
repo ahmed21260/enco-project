@@ -543,7 +543,7 @@ async def error_handler(update, context):
         logger.error(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
         print(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
 
-async def main():
+def main():
     logger.info("=== main() appelé ===")
     print("=== main() appelé ===")
     application = ApplicationBuilder().token(str(BOT_TOKEN)).post_init(on_startup).build()
@@ -622,4 +622,4 @@ async def main():
 if __name__ == "__main__":
     logger.info("=== __main__ détecté, appel main() ===")
     print("=== __main__ détecté, appel main() ===")
-    asyncio.run(main())
+    main()
