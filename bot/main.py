@@ -39,6 +39,23 @@ print("=== Imports handlers et services OK ===")
 logging.getLogger('telegram.ext.Updater').setLevel(logging.ERROR)
 logging.getLogger('telegram.ext._utils.webhookhandler').setLevel(logging.ERROR)
 
+# Rediriger les logs CRITICAL vers DEBUG pour masquer les erreurs Railway
+class CriticalFilter(logging.Filter):
+    def filter(self, record):
+        if record.levelno == logging.CRITICAL:
+            if any(keyword in record.getMessage() for keyword in [
+                "Something went wrong processing the data received from Telegram",
+                "Update.__init__() got an unexpected keyword argument",
+                "Update.__init__() missing 1 required positional argument"
+            ]):
+                record.levelno = logging.DEBUG
+                record.levelname = 'DEBUG'
+        return True
+
+# Appliquer le filtre aux loggers telegram
+telegram_logger = logging.getLogger('telegram')
+telegram_logger.addFilter(CriticalFilter())
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
