@@ -54,6 +54,17 @@ app.get('/api/diagnostic', (req, res) => {
   });
 });
 
+// Endpoint de debug pour vérifier les variables d'environnement
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    BOT_TOKEN_exists: !!process.env.BOT_TOKEN,
+    TELEGRAM_BOT_TOKEN_exists: !!process.env.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_BOT_TOKEN_final: !!TELEGRAM_BOT_TOKEN,
+    FIREBASE_SERVICE_ACCOUNT_exists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Route pour récupérer les positions des opérateurs (depuis Firestore)
 app.get('/api/positions', async (req, res) => {
     try {
@@ -431,10 +442,10 @@ app.post('/api/telegram/send-message', async (req, res) => {
 
         // Récupérer le token du bot depuis les variables d'environnement
         if (!TELEGRAM_BOT_TOKEN) {
-            console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
+            console.error('❌ BOT_TOKEN non configuré');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Configuration Telegram manquante - Token non configuré' 
+                error: 'Configuration Telegram manquante - BOT_TOKEN non configuré' 
             });
         }
 
@@ -519,10 +530,10 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
 
         // Récupérer le token du bot depuis les variables d'environnement
         if (!TELEGRAM_BOT_TOKEN) {
-            console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
+            console.error('❌ BOT_TOKEN non configuré');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Configuration Telegram manquante - Token non configuré' 
+                error: 'Configuration Telegram manquante - BOT_TOKEN non configuré' 
             });
         }
 
@@ -603,10 +614,10 @@ app.get('/api/telegram/test-connection', async (req, res) => {
     try {
         // Récupérer le token du bot depuis les variables d'environnement
         if (!TELEGRAM_BOT_TOKEN) {
-            console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
+            console.error('❌ BOT_TOKEN non configuré');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Configuration Telegram manquante - Token non configuré' 
+                error: 'Configuration Telegram manquante - BOT_TOKEN non configuré' 
             });
         }
 
