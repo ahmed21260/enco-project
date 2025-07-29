@@ -628,6 +628,11 @@ def main():
                 # Créer un update à partir des données filtrées
                 update = Update.de_json(filtered_data, bot)
                 
+                # Initialiser l'application si nécessaire
+                if not application.running:
+                    await application.initialize()
+                    await application.start()
+                
                 # Traiter l'update avec l'application
                 await application.process_update(update)
                 
@@ -645,6 +650,10 @@ def main():
     # Créer l'application webhook
     app = web.Application()
     app.router.add_post(f"/{WEBHOOK_PATH}", handle_webhook)
+    
+    # Initialiser l'application Telegram avant de démarrer le serveur
+    await application.initialize()
+    await application.start()
     
     # Démarrer le serveur webhook
     web.run_app(app, host="0.0.0.0", port=PORT)
