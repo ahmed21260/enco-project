@@ -667,4 +667,4 @@ app.listen(PORT, () => {
   console.log(`🚨 Urgences: ${baseUrl}/api/urgences`);
   console.log(`👥 Opérateurs: ${baseUrl}/api/operateurs`);
   console.log(`🌍 Environnement: ${isProduction ? 'Production' : 'Développement'}`);
-}); v
+});
