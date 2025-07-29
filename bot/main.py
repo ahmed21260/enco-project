@@ -528,7 +528,9 @@ async def error_handler(update, context):
         "TypeError: Update.__init__()",
         "TypeError: can't access property",
         "Update.__init__() got an unexpected keyword argument 'type'",
-        "Update.__init__() missing 1 required positional argument: 'update_id'"
+        "Update.__init__() missing 1 required positional argument: 'update_id'",
+        "asyncio.CancelledError",
+        "Fetching updates got a asyncio.CancelledError"
     ]):
         # Log silencieux pour les erreurs de parsing non-Telegram
         logger.debug("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
@@ -606,57 +608,14 @@ async def main():
     logger.info(f"🔗 API URL : {API_URL}")
     print(f"🔗 API URL : {API_URL}")
 
-    # Créer un serveur webhook personnalisé pour filtrer les requêtes invalides
-    from aiohttp import web
-    import json
-    
-    async def handle_webhook(request):
-        try:
-            # Lire les données de la requête
-            data = await request.json()
-            
-            # Filtrer les requêtes invalides
-            filtered_data = await webhook_handler(data)
-            
-            if filtered_data is None:
-                # Requête invalide, répondre avec succès mais ignorer
-                logger.debug("🚫 Requête webhook invalide ignorée")
-                return web.Response(text="OK", status=200)
-            
-            # Requête valide, la traiter avec le bot
-            try:
-                # Créer un update à partir des données filtrées
-                update = Update.de_json(filtered_data, bot)
-                
-                # Initialiser l'application si nécessaire
-                if not application.running:
-                    await application.initialize()
-                    await application.start()
-                
-                # Traiter l'update avec l'application
-                await application.process_update(update)
-                
-                logger.debug(f"✅ Update Telegram traité: ID={update.update_id}")
-                return web.Response(text="OK", status=200)
-                
-            except Exception as e:
-                logger.error(f"❌ Erreur traitement update: {e}")
-                return web.Response(text="Error", status=500)
-                
-        except Exception as e:
-            logger.error(f"❌ Erreur webhook: {e}")
-            return web.Response(text="Error", status=500)
-    
-    # Créer l'application webhook
-    app = web.Application()
-    app.router.add_post(f"/{WEBHOOK_PATH}", handle_webhook)
-    
-    # Initialiser l'application Telegram avant de démarrer le serveur
-    await application.initialize()
-    await application.start()
-    
-    # Démarrer le serveur webhook
-    web.run_app(app, host="0.0.0.0", port=PORT)
+    # Utiliser le webhook standard avec un meilleur gestionnaire d'erreur
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url=WEBHOOK_URL,
+        url_path=f"/{WEBHOOK_PATH}",
+        allowed_updates=["message", "callback_query", "photo", "voice"]
+    )
     logger.info("=== Fin de main() ===")
     print("=== Fin de main() ===")
 
