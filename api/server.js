@@ -9,6 +9,13 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Vérification des variables d'environnement critiques
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+if (!TELEGRAM_BOT_TOKEN) {
+    console.error('❌ ERREUR CRITIQUE: TELEGRAM_BOT_TOKEN non configuré');
+    console.error('📝 Veuillez configurer TELEGRAM_BOT_TOKEN dans les variables d\'environnement Railway');
+}
+
 // Middleware
 app.use(cors({
   origin: ["https://enco-prestarail.web.app", "http://localhost:3000", "http://localhost:5173"]
@@ -34,6 +41,16 @@ app.get('/', (req, res) => {
     message: 'ENCO API Server', 
     timestamp: new Date().toISOString(),
     version: '1.0.0'
+  });
+});
+
+// Endpoint de diagnostic pour vérifier les configurations
+app.get('/api/diagnostic', (req, res) => {
+  res.json({
+    status: 'OK',
+    telegram_configured: !!TELEGRAM_BOT_TOKEN,
+    firebase_configured: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -413,12 +430,11 @@ app.post('/api/telegram/send-message', async (req, res) => {
         }
 
         // Récupérer le token du bot depuis les variables d'environnement
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!botToken) {
+        if (!TELEGRAM_BOT_TOKEN) {
             console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Configuration Telegram manquante' 
+                error: 'Configuration Telegram manquante - Token non configuré' 
             });
         }
 
@@ -437,7 +453,7 @@ app.post('/api/telegram/send-message', async (req, res) => {
         });
 
         // Appeler l'API Telegram
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -502,12 +518,11 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
         }
 
         // Récupérer le token du bot depuis les variables d'environnement
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!botToken) {
+        if (!TELEGRAM_BOT_TOKEN) {
             console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Configuration Telegram manquante' 
+                error: 'Configuration Telegram manquante - Token non configuré' 
             });
         }
 
@@ -531,7 +546,7 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
         });
 
         // Appeler l'API Telegram
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
             method: 'POST',
             body: formData
         });
@@ -587,19 +602,18 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
 app.get('/api/telegram/test-connection', async (req, res) => {
     try {
         // Récupérer le token du bot depuis les variables d'environnement
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!botToken) {
+        if (!TELEGRAM_BOT_TOKEN) {
             console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
             return res.status(500).json({ 
                 success: false, 
-                error: 'Configuration Telegram manquante' 
+                error: 'Configuration Telegram manquante - Token non configuré' 
             });
         }
 
         console.log('🔍 Test de connexion Telegram via API backend...');
 
         // Appeler l'API Telegram pour tester la connexion
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
         const telegramResult = await telegramResponse.json();
 
         console.log('📱 Réponse API Telegram (test):', telegramResult);
