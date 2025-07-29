@@ -538,9 +538,13 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
         }
 
         // Créer un FormData pour l'API Telegram
+        const FormData = require('form-data');
         const formData = new FormData();
         formData.append('chat_id', chat_id);
-        formData.append('document', documentFile.buffer, documentFile.originalname);
+        formData.append('document', documentFile.buffer, {
+            filename: documentFile.originalname,
+            contentType: documentFile.mimetype || 'application/octet-stream'
+        });
         
         if (caption) {
             formData.append('caption', caption);
@@ -559,7 +563,8 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
         // Appeler l'API Telegram
         const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: formData.getHeaders()
         });
 
         const telegramResult = await telegramResponse.json();
