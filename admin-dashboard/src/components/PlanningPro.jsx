@@ -280,6 +280,19 @@ const PlanningPro = () => {
       // Convertir le PDF en Blob
       const pdfBlob = pdfDoc.output('blob');
       
+      // Validation du Blob généré
+      if (!pdfBlob || !(pdfBlob instanceof Blob)) {
+        console.error('❌ Erreur: PDF Blob invalide');
+        setMessage('❌ Erreur lors de la génération du PDF');
+        return;
+      }
+
+      console.log('📄 PDF Blob généré:', {
+        size: pdfBlob.size,
+        type: pdfBlob.type,
+        valid: pdfBlob instanceof Blob
+      });
+
       // Préparer les données pour l'envoi
       const telegramData = {
         operateur: planningEntry.operateur_nom,

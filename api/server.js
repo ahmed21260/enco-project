@@ -14,6 +14,8 @@ const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOK
 if (!TELEGRAM_BOT_TOKEN) {
     console.error('❌ ERREUR CRITIQUE: BOT_TOKEN ou TELEGRAM_BOT_TOKEN non configuré');
     console.error('📝 Veuillez configurer BOT_TOKEN dans les variables d\'environnement Railway');
+} else {
+    console.log('✅ BOT_TOKEN configuré:', TELEGRAM_BOT_TOKEN.substring(0, 10) + '...');
 }
 
 // Middleware
@@ -537,14 +539,40 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
             });
         }
 
+        // Validation du fichier reçu
+        if (!documentFile || !documentFile.buffer) {
+            console.error('❌ Fichier manquant ou invalide');
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Fichier manquant ou invalide' 
+            });
+        }
+
+        console.log('📱 Validation fichier reçu:', {
+            originalname: documentFile.originalname,
+            mimetype: documentFile.mimetype,
+            size: documentFile.size,
+            buffer_length: documentFile.buffer.length
+        });
+
         // Créer un FormData pour l'API Telegram
         const FormData = require('form-data');
         const formData = new FormData();
         formData.append('chat_id', chat_id);
-        formData.append('document', documentFile.buffer, {
-            filename: documentFile.originalname,
-            contentType: documentFile.mimetype || 'application/octet-stream'
-        });
+        
+        // Amélioration de la création du FormData
+        try {
+            formData.append('document', documentFile.buffer, {
+                filename: documentFile.originalname || 'planning.pdf',
+                contentType: documentFile.mimetype || 'application/pdf'
+            });
+        } catch (formDataError) {
+            console.error('❌ Erreur création FormData:', formDataError);
+            return res.status(500).json({
+                success: false,
+                error: 'Erreur création FormData: ' + formDataError.message
+            });
+        }
         
         if (caption) {
             formData.append('caption', caption);
