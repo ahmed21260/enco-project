@@ -35,6 +35,10 @@ import json
 from datetime import datetime
 print("=== Imports handlers et services OK ===")
 
+# Désactiver les logs CRITICAL de python-telegram-bot pour les erreurs Railway
+logging.getLogger('telegram.ext.Updater').setLevel(logging.ERROR)
+logging.getLogger('telegram.ext._utils.webhookhandler').setLevel(logging.ERROR)
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -530,18 +534,19 @@ async def error_handler(update, context):
         "Update.__init__() got an unexpected keyword argument 'type'",
         "Update.__init__() missing 1 required positional argument: 'update_id'",
         "asyncio.CancelledError",
-        "Fetching updates got a asyncio.CancelledError"
+        "Fetching updates got a asyncio.CancelledError",
+        "Something went wrong processing the data received from Telegram",
+        "Received data was *not* processed",
+        "CRITICAL:telegram.ext.Updater"
     ]):
         # Log silencieux pour les erreurs de parsing non-Telegram
         logger.debug("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
         return
     
-    # Log des autres erreurs (vraies erreurs Telegram)
-    logger.error(f"❌ Erreur lors du traitement d'un update: {error_msg}")
-    print(f"❌ Erreur lors du traitement d'un update: {error_msg}")
+    # Log des autres erreurs (vraies erreurs Telegram) - niveau INFO au lieu de ERROR
+    logger.info(f"⚠️ Erreur lors du traitement d'un update: {error_msg}")
     if update:
-        logger.error(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
-        print(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
+        logger.info(f"Update ID: {update.update_id if hasattr(update, 'update_id') else 'Unknown'}")
 
 def main():
     logger.info("=== main() appelé ===")
