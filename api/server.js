@@ -400,6 +400,189 @@ app.get('/api/envois-planning', async (req, res) => {
     }
 });
 
+// Route pour envoyer des messages Telegram (depuis le dashboard)
+app.post('/api/telegram/send-message', async (req, res) => {
+    try {
+        const { chat_id, text, parse_mode, disable_web_page_preview, planning_data } = req.body;
+        
+        if (!chat_id || !text) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'chat_id et text sont requis' 
+            });
+        }
+
+        // Récupérer le token du bot depuis les variables d'environnement
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) {
+            console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Configuration Telegram manquante' 
+            });
+        }
+
+        // Préparer le payload pour l'API Telegram
+        const telegramPayload = {
+            chat_id: chat_id,
+            text: text,
+            parse_mode: parse_mode || 'HTML',
+            disable_web_page_preview: disable_web_page_preview || true
+        };
+
+        console.log('📱 Envoi message Telegram via API:', {
+            chat_id,
+            text_length: text.length,
+            parse_mode
+        });
+
+        // Appeler l'API Telegram
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(telegramPayload)
+        });
+
+        const telegramResult = await telegramResponse.json();
+        console.log('📱 Réponse API Telegram:', telegramResult);
+
+        if (telegramResult.ok) {
+            // Enregistrer l'envoi dans Firestore si c'est un planning
+            if (planning_data) {
+                try {
+                    await db.collection('envois_planning').add({
+                        timestamp: new Date().toISOString(),
+                        chat_id: chat_id,
+                        planning_data: planning_data,
+                        message_id: telegramResult.result.message_id,
+                        success: true
+                    });
+                    console.log('✅ Envoi enregistré dans Firestore');
+                } catch (firestoreError) {
+                    console.warn('⚠️ Erreur enregistrement Firestore:', firestoreError);
+                }
+            }
+
+            return res.json({
+                success: true,
+                messageId: telegramResult.result.message_id,
+                chatId: telegramResult.result.chat.id,
+                sentAt: new Date().toISOString()
+            });
+        } else {
+            console.error('❌ Erreur API Telegram:', telegramResult);
+            return res.status(400).json({
+                success: false,
+                error: telegramResult.description || 'Erreur API Telegram'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur envoi message Telegram:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || 'Erreur interne'
+        });
+    }
+});
+
+// Route pour envoyer des documents Telegram (depuis le dashboard)
+app.post('/api/telegram/send-document', upload.single('document'), async (req, res) => {
+    try {
+        const { chat_id, caption, parse_mode, planning_data } = req.body;
+        const documentFile = req.file;
+        
+        if (!chat_id || !documentFile) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'chat_id et document sont requis' 
+            });
+        }
+
+        // Récupérer le token du bot depuis les variables d'environnement
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) {
+            console.error('❌ TELEGRAM_BOT_TOKEN non configuré');
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Configuration Telegram manquante' 
+            });
+        }
+
+        // Créer un FormData pour l'API Telegram
+        const formData = new FormData();
+        formData.append('chat_id', chat_id);
+        formData.append('document', documentFile.buffer, documentFile.originalname);
+        
+        if (caption) {
+            formData.append('caption', caption);
+        }
+        if (parse_mode) {
+            formData.append('parse_mode', parse_mode);
+        }
+
+        console.log('📱 Envoi document Telegram via API:', {
+            chat_id,
+            filename: documentFile.originalname,
+            size: documentFile.size,
+            caption_length: caption ? caption.length : 0
+        });
+
+        // Appeler l'API Telegram
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const telegramResult = await telegramResponse.json();
+        console.log('📱 Réponse API Telegram (document):', telegramResult);
+
+        if (telegramResult.ok) {
+            // Enregistrer l'envoi dans Firestore si c'est un planning
+            if (planning_data) {
+                try {
+                    const planningData = JSON.parse(planning_data);
+                    await db.collection('envois_planning').add({
+                        timestamp: new Date().toISOString(),
+                        chat_id: chat_id,
+                        planning_data: planningData,
+                        message_id: telegramResult.result.message_id,
+                        document_id: telegramResult.result.document.file_id,
+                        success: true,
+                        type: 'document'
+                    });
+                    console.log('✅ Envoi document enregistré dans Firestore');
+                } catch (firestoreError) {
+                    console.warn('⚠️ Erreur enregistrement Firestore:', firestoreError);
+                }
+            }
+
+            return res.json({
+                success: true,
+                messageId: telegramResult.result.message_id,
+                documentId: telegramResult.result.document.file_id,
+                chatId: telegramResult.result.chat.id,
+                sentAt: new Date().toISOString()
+            });
+        } else {
+            console.error('❌ Erreur API Telegram (document):', telegramResult);
+            return res.status(400).json({
+                success: false,
+                error: telegramResult.description || 'Erreur API Telegram'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur envoi document Telegram:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || 'Erreur interne'
+        });
+    }
+});
+
 // Affichage dynamique de toutes les routes disponibles (compatibilité Railway)
 try {
     const listEndpoints = require('express-list-endpoints');

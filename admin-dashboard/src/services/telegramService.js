@@ -1,21 +1,20 @@
 /**
  * Service d'envoi de messages Telegram pour les plannings ENCO
- * Envoie directement les plannings aux opérateurs via Telegram
+ * Envoie les plannings aux opérateurs via notre API backend
  */
 
-// Configuration Telegram (à adapter selon votre bot)
-const TELEGRAM_CONFIG = {
-  botToken: import.meta.env.VITE_TELEGRAM_BOT_TOKEN || 'your_bot_token_here',
-  apiUrl: 'https://api.telegram.org/bot',
-  chatId: null // Sera défini dynamiquement
+// Configuration API backend
+const API_CONFIG = {
+  baseUrl: import.meta.env.VITE_API_URL || 'https://believable-motivation-production.up.railway.app',
+  telegramEndpoint: '/api/telegram/send-message'
 };
 
 /**
- * Envoie un message de planning via Telegram
+ * Envoie un message de planning via notre API backend
  */
 export const sendTelegramMessage = async (planningData) => {
   try {
-    console.log('📱 Envoi du planning via Telegram:', planningData);
+    console.log('📱 Envoi du planning via API backend:', planningData);
 
     if (!planningData.telegram_id) {
       throw new Error('Aucun ID Telegram fourni');
@@ -23,38 +22,39 @@ export const sendTelegramMessage = async (planningData) => {
 
     const message = generateTelegramMessage(planningData);
 
-    const telegramPayload = {
+    const payload = {
       chat_id: planningData.telegram_id,
       text: message,
       parse_mode: 'HTML',
-      disable_web_page_preview: true
+      disable_web_page_preview: true,
+      planning_data: planningData // Données supplémentaires pour le backend
     };
 
-    console.log('📱 Message Telegram préparé:', telegramPayload);
+    console.log('📱 Message préparé pour API backend:', payload);
 
-    // ENVOI RÉEL VIA L'API TELEGRAM
-    const response = await fetch(`${TELEGRAM_CONFIG.apiUrl}${TELEGRAM_CONFIG.botToken}/sendMessage`, {
+    // ENVOI VIA NOTRE API BACKEND
+    const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.telegramEndpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(telegramPayload)
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
-    console.log('📱 Réponse API Telegram:', result);
+    console.log('📱 Réponse API backend:', result);
 
-    if (result.ok) {
-      console.log('✅ Message Telegram envoyé avec succès');
+    if (result.success) {
+      console.log('✅ Message Telegram envoyé avec succès via API backend');
       return {
         success: true,
-        messageId: result.result.message_id,
+        messageId: result.messageId || `telegram_${Date.now()}`,
         sentAt: new Date().toISOString(),
-        chatId: result.result.chat.id
+        chatId: result.chatId || planningData.telegram_id
       };
     } else {
-      console.error('❌ Erreur API Telegram:', result);
-      throw new Error(`Erreur Telegram: ${result.description || 'Erreur inconnue'}`);
+      console.error('❌ Erreur API backend:', result);
+      throw new Error(`Erreur API backend: ${result.error || 'Erreur inconnue'}`);
     }
 
   } catch (error) {
@@ -289,7 +289,7 @@ export const testTelegramConnection = async () => {
  */
 export const sendTelegramFile = async (planningData, pdfBlob) => {
   try {
-    console.log('📱 Envoi du fichier PDF via Telegram:', planningData);
+    console.log('📱 Envoi du fichier PDF via API backend:', planningData);
 
     if (!planningData.telegram_id) {
       throw new Error('Aucun ID Telegram fourni');
@@ -304,34 +304,35 @@ export const sendTelegramFile = async (planningData, pdfBlob) => {
     const caption = generateTelegramFileCaption(planningData);
     formData.append('caption', caption);
     formData.append('parse_mode', 'HTML');
+    formData.append('planning_data', JSON.stringify(planningData));
 
-    console.log('📱 Fichier Telegram préparé:', {
+    console.log('📱 Fichier préparé pour API backend:', {
       chat_id: planningData.telegram_id,
       filename: `planning_${planningData.operateur}_${planningData.date_debut}.pdf`,
       caption: caption
     });
 
-    // ENVOI RÉEL VIA L'API TELEGRAM
-    const response = await fetch(`${TELEGRAM_CONFIG.apiUrl}${TELEGRAM_CONFIG.botToken}/sendDocument`, {
+    // ENVOI VIA NOTRE API BACKEND
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/telegram/send-document`, {
       method: 'POST',
       body: formData
     });
 
     const result = await response.json();
-    console.log('📱 Réponse API Telegram (fichier):', result);
+    console.log('📱 Réponse API backend (fichier):', result);
 
-    if (result.ok) {
-      console.log('✅ Fichier PDF Telegram envoyé avec succès');
+    if (result.success) {
+      console.log('✅ Fichier PDF Telegram envoyé avec succès via API backend');
       return {
         success: true,
-        messageId: result.result.message_id,
-        documentId: result.result.document.file_id,
+        messageId: result.messageId || `file_${Date.now()}`,
+        documentId: result.documentId || `doc_${Date.now()}`,
         sentAt: new Date().toISOString(),
-        chatId: result.result.chat.id
+        chatId: result.chatId || planningData.telegram_id
       };
     } else {
-      console.error('❌ Erreur API Telegram (fichier):', result);
-      throw new Error(`Erreur Telegram: ${result.description || 'Erreur inconnue'}`);
+      console.error('❌ Erreur API backend (fichier):', result);
+      throw new Error(`Erreur API backend: ${result.error || 'Erreur inconnue'}`);
     }
 
   } catch (error) {
