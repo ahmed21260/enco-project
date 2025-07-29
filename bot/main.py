@@ -463,14 +463,16 @@ async def error_handler(update, context):
     """Gestionnaire d'erreur global"""
     error_msg = str(context.error) if context.error else "Unknown error"
     
-    # Ignorer les erreurs de parsing des requêtes non-Telegram
+    # Ignorer les erreurs de parsing des requêtes non-Telegram (notifications Railway)
     if any(keyword in error_msg for keyword in [
         "unexpected keyword argument 'type'",
         "missing 1 required positional argument: 'update_id'",
-        "got an unexpected keyword argument"
+        "got an unexpected keyword argument",
+        "Update.__init__() got an unexpected keyword argument",
+        "Update.__init__() missing 1 required positional argument"
     ]):
-        logger.warning("🚫 Requête non-Telegram ignorée (Railway notification)")
-        print("🚫 Requête non-Telegram ignorée (Railway notification)")
+        logger.warning("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
+        print("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
         return
     
     # Log des autres erreurs

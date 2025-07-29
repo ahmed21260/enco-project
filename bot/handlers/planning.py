@@ -168,7 +168,7 @@ async def get_operator_planning(operator_id):
     
     try:
         # Récupérer le planning depuis la collection 'planning' de la dashboard
-        planning_docs = list(db.collection('planning').where('operateur_id', '==', str(operator_id)).stream())
+        planning_docs = list(db.collection('planning').filter('operateur_id', '==', str(operator_id)).stream())
         
         # Chercher les plannings pour aujourd'hui et demain
         for doc in planning_docs:
@@ -395,7 +395,7 @@ async def show_planning_stats(update: Update, context: ContextTypes.DEFAULT_TYPE
     try:
         # Consultations du jour
         today = datetime.now().date().isoformat()
-        consultations = list(db.collection('consultations_planning').where('date_planning', '==', today).stream())
+        consultations = list(db.collection('consultations_planning').filter('date_planning', '==', today).stream())
         
         # Envois du jour
         envois = list(db.collection('envois_planning').stream())
