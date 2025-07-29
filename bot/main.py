@@ -429,11 +429,11 @@ async def prompt_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler universel de logging pour tous les updates"""
-    logger.info("=== log_update appelé ===")
-    print("=== log_update appelé ===")
-    
     if not update:
-        logger.warning("Update None reçu")
+        return
+    
+    # Vérifier si c'est un vrai message Telegram (pas une notification Railway)
+    if not hasattr(update, 'update_id') or update.update_id is None:
         return
     
     chat_id = update.effective_chat.id if update.effective_chat else "N/A"
@@ -441,25 +441,18 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id if update.effective_user else "N/A"
     
     logger.info(f"[UPDATE] ID: {update.update_id} | Chat: {chat_id} | User: {user} ({user_id})")
-    print(f"[UPDATE] ID: {update.update_id} | Chat: {chat_id} | User: {user} ({user_id})")
     
     if update.message:
         if update.message.text:
             logger.info(f"[UPDATE] Texte: {update.message.text}")
-            print(f"[UPDATE] Texte: {update.message.text}")
         if update.message.photo:
             logger.info(f"[UPDATE] Photo reçue ({len(update.message.photo)} variantes)")
-            print(f"[UPDATE] Photo reçue ({len(update.message.photo)} variantes)")
         if update.message.location:
             logger.info(f"[UPDATE] Localisation: {update.message.location.latitude}, {update.message.location.longitude}")
-            print(f"[UPDATE] Localisation: {update.message.location.latitude}, {update.message.location.longitude}")
         if update.message.voice:
             logger.info(f"[UPDATE] Message vocal reçu")
-            print(f"[UPDATE] Message vocal reçu")
 
 async def error_handler(update, context):
-    logger.error("=== error_handler appelé ===")
-    print("=== error_handler appelé ===")
     """Gestionnaire d'erreur global"""
     error_msg = str(context.error) if context.error else "Unknown error"
     
@@ -469,13 +462,15 @@ async def error_handler(update, context):
         "missing 1 required positional argument: 'update_id'",
         "got an unexpected keyword argument",
         "Update.__init__() got an unexpected keyword argument",
-        "Update.__init__() missing 1 required positional argument"
+        "Update.__init__() missing 1 required positional argument",
+        "TypeError: Update.__init__()",
+        "TypeError: can't access property"
     ]):
-        logger.warning("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
-        print("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
+        # Log silencieux pour les erreurs de parsing non-Telegram
+        logger.debug("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
         return
     
-    # Log des autres erreurs
+    # Log des autres erreurs (vraies erreurs Telegram)
     logger.error(f"❌ Erreur lors du traitement d'un update: {error_msg}")
     print(f"❌ Erreur lors du traitement d'un update: {error_msg}")
     if update:
