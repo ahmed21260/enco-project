@@ -531,6 +531,12 @@ app.post('/api/telegram/send-document', upload.single('document'), async (req, r
         }
 
         // Récupérer le token du bot depuis les variables d'environnement
+        console.log('🔍 Diagnostic token dans send-document:', {
+            TELEGRAM_BOT_TOKEN_exists: !!TELEGRAM_BOT_TOKEN,
+            TELEGRAM_BOT_TOKEN_length: TELEGRAM_BOT_TOKEN ? TELEGRAM_BOT_TOKEN.length : 0,
+            TELEGRAM_BOT_TOKEN_start: TELEGRAM_BOT_TOKEN ? TELEGRAM_BOT_TOKEN.substring(0, 10) : 'N/A'
+        });
+        
         if (!TELEGRAM_BOT_TOKEN) {
             console.error('❌ BOT_TOKEN non configuré');
             return res.status(500).json({ 
