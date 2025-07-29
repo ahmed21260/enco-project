@@ -484,23 +484,35 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def validate_webhook_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler de validation webhook - filtre les requêtes invalides"""
-    if not update:
-        logger.debug("🚫 Update invalide reçu (None)")
-        return
-    
-    # Vérifier si c'est un vrai message Telegram
-    if not hasattr(update, 'update_id') or update.update_id is None:
-        logger.debug("🚫 Update sans update_id reçu (notification Railway)")
-        return
-    
-    # Vérifier la présence d'un utilisateur valide
-    if not update.effective_user:
-        logger.debug("🚫 Update sans utilisateur valide")
-        return
-    
-    # Si on arrive ici, c'est un update Telegram valide
-    logger.debug(f"✅ Update Telegram valide reçu: ID={update.update_id}")
-    return True
+    # Ce handler ne devrait jamais être appelé car on filtre avant
+    logger.debug("🚫 Handler de validation appelé - requête invalide")
+    return
+
+async def webhook_handler(request_data):
+    """Handler webhook personnalisé pour filtrer les requêtes invalides"""
+    try:
+        # Vérifier si c'est une requête Telegram valide
+        if not request_data or not isinstance(request_data, dict):
+            logger.debug("🚫 Requête webhook invalide (pas un dict)")
+            return None
+        
+        # Vérifier la présence d'update_id (requis pour Telegram)
+        if 'update_id' not in request_data:
+            logger.debug("🚫 Requête webhook sans update_id (notification Railway)")
+            return None
+        
+        # Vérifier que ce n'est pas une notification Railway
+        if 'type' in request_data and request_data['type'] in ['DEPLOY', 'deploy']:
+            logger.debug("🚫 Notification Railway ignorée")
+            return None
+        
+        # Si on arrive ici, c'est probablement un update Telegram valide
+        logger.debug(f"✅ Update Telegram valide détecté: ID={request_data.get('update_id')}")
+        return request_data
+        
+    except Exception as e:
+        logger.debug(f"🚫 Erreur validation webhook: {e}")
+        return None
 
 async def error_handler(update, context):
     """Gestionnaire d'erreur global"""
@@ -537,10 +549,7 @@ def main():
     print("=== Application Telegram construite ===")
     application.add_error_handler(error_handler)
     
-    # Ajouter le handler de validation webhook en premier (priorité maximale)
-    application.add_handler(MessageHandler(filters.ALL, validate_webhook_request), group=0)
-    
-    # Ajouter le handler de logging en deuxième (priorité haute)
+    # Ajouter le handler de logging (priorité haute)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=1)
     
     # Ajouter un handler universel pour les messages texte (IA + Firestore)
@@ -597,12 +606,48 @@ def main():
     logger.info(f"🔗 API URL : {API_URL}")
     print(f"🔗 API URL : {API_URL}")
 
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=WEBHOOK_URL,
-        url_path=f"/{WEBHOOK_PATH}"
-    )
+    # Créer un serveur webhook personnalisé pour filtrer les requêtes invalides
+    from aiohttp import web
+    import json
+    
+    async def handle_webhook(request):
+        try:
+            # Lire les données de la requête
+            data = await request.json()
+            
+            # Filtrer les requêtes invalides
+            filtered_data = await webhook_handler(data)
+            
+            if filtered_data is None:
+                # Requête invalide, répondre avec succès mais ignorer
+                logger.debug("🚫 Requête webhook invalide ignorée")
+                return web.Response(text="OK", status=200)
+            
+            # Requête valide, la traiter avec le bot
+            try:
+                # Créer un update à partir des données filtrées
+                update = Update.de_json(filtered_data, bot)
+                
+                # Traiter l'update avec l'application
+                await application.process_update(update)
+                
+                logger.debug(f"✅ Update Telegram traité: ID={update.update_id}")
+                return web.Response(text="OK", status=200)
+                
+            except Exception as e:
+                logger.error(f"❌ Erreur traitement update: {e}")
+                return web.Response(text="Error", status=500)
+                
+        except Exception as e:
+            logger.error(f"❌ Erreur webhook: {e}")
+            return web.Response(text="Error", status=500)
+    
+    # Créer l'application webhook
+    app = web.Application()
+    app.router.add_post(f"/{WEBHOOK_PATH}", handle_webhook)
+    
+    # Démarrer le serveur webhook
+    web.run_app(app, host="0.0.0.0", port=PORT)
     logger.info("=== Fin de main() ===")
     print("=== Fin de main() ===")
 
