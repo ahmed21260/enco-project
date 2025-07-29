@@ -236,14 +236,14 @@ async def get_operator_planning(operator_id):
             }
         
         # Vérifier prise de poste
-        prises = list(db.collection('prises_poste').where('operateur_id', '==', str(operator_id)).where('heure', '>=', today).stream())
+        prises = list(db.collection('prises_poste').filter('operateur_id', '==', str(operator_id)).filter('heure', '>=', today).stream())
         planning_info['prise_effectuee'] = len(prises) > 0
         
         # Récupérer les actions du jour
-        planning_info['photos'] = list(db.collection('photos').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
-        planning_info['bons'] = list(db.collection('bons_attachement').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
-        planning_info['anomalies'] = list(db.collection('anomalies').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
-        planning_info['urgences'] = list(db.collection('urgences').where('operateur_id', '==', str(operator_id)).where('createdAt', '>=', today).stream())
+        planning_info['photos'] = list(db.collection('photos').filter('operateur_id', '==', str(operator_id)).filter('createdAt', '>=', today).stream())
+        planning_info['bons'] = list(db.collection('bons_attachement').filter('operateur_id', '==', str(operator_id)).filter('createdAt', '>=', today).stream())
+        planning_info['anomalies'] = list(db.collection('anomalies').filter('operateur_id', '==', str(operator_id)).filter('createdAt', '>=', today).stream())
+        planning_info['urgences'] = list(db.collection('urgences').filter('operateur_id', '==', str(operator_id)).filter('createdAt', '>=', today).stream())
         
         # Alertes si pas de prise de poste
         if not planning_info['prise_effectuee']:

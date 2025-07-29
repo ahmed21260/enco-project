@@ -155,7 +155,7 @@ async def send_daily_planning():
             if op_id:
                 try:
                     # Récupérer le planning de l'opérateur pour aujourd'hui
-                    planning_docs = list(db.collection('planning').where('operateur_id', '==', str(op_id)).where('date_debut', '<=', today).where('date_fin', '>=', today).stream())
+                    planning_docs = list(db.collection('planning').filter('operateur_id', '==', str(op_id)).filter('date_debut', '<=', today).filter('date_fin', '>=', today).stream())
                     
                     if planning_docs:
                         planning = planning_docs[0].to_dict()
