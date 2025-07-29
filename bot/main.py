@@ -368,14 +368,17 @@ def schedule_reminders():
     # Rappel de fin de journée à 16h00
     scheduler.add_job(send_daily_reminder, 'cron', hour=16, minute=0)
     
-    scheduler.start()
     logger.info("=== Rappels automatiques programmés ===")
     print("=== Rappels automatiques programmés ===")
+    
+    return scheduler
 
 async def on_startup(app):
     logger.info("=== on_startup appelé ===")
     print("=== on_startup appelé ===")
     sys.stdout.flush()
+    
+    # Initialiser et démarrer le scheduler
     scheduler = schedule_reminders()
     scheduler.start()
     logger.info("\U0001F551 Scheduler des rappels quotidiens démarré !")
