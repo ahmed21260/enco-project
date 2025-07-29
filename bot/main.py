@@ -456,7 +456,7 @@ async def error_handler(update, context):
     """Gestionnaire d'erreur global"""
     error_msg = str(context.error) if context.error else "Unknown error"
     
-    # Ignorer les erreurs de parsing des requêtes non-Telegram (notifications Railway)
+    # Ignorer les erreurs de parsing des requêtes non-Telegram (notifications Railway, webhook invalides)
     if any(keyword in error_msg for keyword in [
         "unexpected keyword argument 'type'",
         "missing 1 required positional argument: 'update_id'",
@@ -464,7 +464,9 @@ async def error_handler(update, context):
         "Update.__init__() got an unexpected keyword argument",
         "Update.__init__() missing 1 required positional argument",
         "TypeError: Update.__init__()",
-        "TypeError: can't access property"
+        "TypeError: can't access property",
+        "Update.__init__() got an unexpected keyword argument 'type'",
+        "Update.__init__() missing 1 required positional argument: 'update_id'"
     ]):
         # Log silencieux pour les erreurs de parsing non-Telegram
         logger.debug("🚫 Requête non-Telegram ignorée (Railway notification ou webhook invalide)")
