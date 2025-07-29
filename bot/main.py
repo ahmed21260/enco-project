@@ -180,31 +180,61 @@ async def send_daily_planning():
                         message += "✅ **Planning confirmé par l'encadrement**\n"
                         message += "📞 Contactez l'encadrement en cas de question."
                         
-                        # Envoyer le message
-                        await bot.send_message(
-                            chat_id=op_id,
-                            text=message
-                        )
+                        # Envoyer le message via l'API backend
+                        api_url = os.getenv("API_URL", "https://believable-motivation-production.up.railway.app")
+                        telegram_url = f"{api_url}/api/telegram/send-message"
                         
-                        logger.info(f"Planning envoyé à {op_name} ({op_id})")
-                        sent_count += 1
+                        payload = {
+                            "chat_id": op_id,
+                            "text": message,
+                            "parse_mode": "HTML"
+                        }
                         
-                        # Marquer comme envoyé dans Firestore
-                        planning_docs[0].reference.update({
-                            'envoyé_telegram': True,
-                            'envoyé_telegram_le': datetime.now().isoformat()
-                        })
+                        import aiohttp
+                        async with aiohttp.ClientSession() as session:
+                            async with session.post(telegram_url, json=payload) as response:
+                                if response.status == 200:
+                                    result = await response.json()
+                                    if result.get('success'):
+                                        logger.info(f"Planning envoyé à {op_name} ({op_id})")
+                                        sent_count += 1
+                                        
+                                        # Marquer comme envoyé dans Firestore
+                                        planning_docs[0].reference.update({
+                                            'envoyé_telegram': True,
+                                            'envoyé_telegram_le': datetime.now().isoformat()
+                                        })
+                                    else:
+                                        logger.error(f"Erreur API backend pour {op_name}: {result.get('error')}")
+                                else:
+                                    logger.error(f"Erreur HTTP {response.status} pour {op_name}")
                         
                     else:
                         # Pas de planning pour aujourd'hui
-                        await bot.send_message(
-                            chat_id=op_id,
-                            text=f"🗓️ **PLANNING DU JOUR - {op_name}**\n\n"
-                                 f"⚠️ Aucun planning défini pour aujourd'hui.\n"
-                                 f"📞 Contactez l'encadrement pour plus d'informations."
-                        )
-                        logger.info(f"Message 'pas de planning' envoyé à {op_name} ({op_id})")
-                        sent_count += 1
+                        no_planning_msg = f"🗓️ **PLANNING DU JOUR - {op_name}**\n\n⚠️ Aucun planning défini pour aujourd'hui.\n📞 Contactez l'encadrement pour plus d'informations."
+                        
+                        # Envoyer via API backend
+                        api_url = os.getenv("API_URL", "https://believable-motivation-production.up.railway.app")
+                        telegram_url = f"{api_url}/api/telegram/send-message"
+                        
+                        payload = {
+                            "chat_id": op_id,
+                            "text": no_planning_msg,
+                            "parse_mode": "HTML"
+                        }
+                        
+                        import aiohttp
+                        async with aiohttp.ClientSession() as session:
+                            async with session.post(telegram_url, json=payload) as response:
+                                if response.status == 200:
+                                    result = await response.json()
+                                    if result.get('success'):
+                                        logger.info(f"Message 'pas de planning' envoyé à {op_name} ({op_id})")
+                                        sent_count += 1
+                                    else:
+                                        logger.error(f"Erreur API backend pour {op_name}: {result.get('error')}")
+                                else:
+                                    logger.error(f"Erreur HTTP {response.status} pour {op_name}")
                         
                 except Exception as e:
                     logger.error(f"Erreur envoi planning à {op_name} ({op_id}): {e}")
@@ -452,6 +482,26 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.message.voice:
             logger.info(f"[UPDATE] Message vocal reçu")
 
+async def validate_webhook_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler de validation webhook - filtre les requêtes invalides"""
+    if not update:
+        logger.debug("🚫 Update invalide reçu (None)")
+        return
+    
+    # Vérifier si c'est un vrai message Telegram
+    if not hasattr(update, 'update_id') or update.update_id is None:
+        logger.debug("🚫 Update sans update_id reçu (notification Railway)")
+        return
+    
+    # Vérifier la présence d'un utilisateur valide
+    if not update.effective_user:
+        logger.debug("🚫 Update sans utilisateur valide")
+        return
+    
+    # Si on arrive ici, c'est un update Telegram valide
+    logger.debug(f"✅ Update Telegram valide reçu: ID={update.update_id}")
+    return True
+
 async def error_handler(update, context):
     """Gestionnaire d'erreur global"""
     error_msg = str(context.error) if context.error else "Unknown error"
@@ -487,7 +537,10 @@ def main():
     print("=== Application Telegram construite ===")
     application.add_error_handler(error_handler)
     
-    # Ajouter le handler de logging en premier (priorité haute)
+    # Ajouter le handler de validation webhook en premier (priorité maximale)
+    application.add_handler(MessageHandler(filters.ALL, validate_webhook_request), group=0)
+    
+    # Ajouter le handler de logging en deuxième (priorité haute)
     application.add_handler(MessageHandler(filters.ALL, log_update), group=1)
     
     # Ajouter un handler universel pour les messages texte (IA + Firestore)
