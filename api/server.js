@@ -10,10 +10,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Vérification des variables d'environnement critiques
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 if (!TELEGRAM_BOT_TOKEN) {
-    console.error('❌ ERREUR CRITIQUE: TELEGRAM_BOT_TOKEN non configuré');
-    console.error('📝 Veuillez configurer TELEGRAM_BOT_TOKEN dans les variables d\'environnement Railway');
+    console.error('❌ ERREUR CRITIQUE: BOT_TOKEN ou TELEGRAM_BOT_TOKEN non configuré');
+    console.error('📝 Veuillez configurer BOT_TOKEN dans les variables d\'environnement Railway');
 }
 
 // Middleware
